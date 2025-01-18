@@ -29,21 +29,23 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
+                // Add additional dependencies here
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.test)
+                // Add additional test dependencies here
             }
         }
     }
 }
 
 android {
-    namespace = "org.jetbrains.kotlinx.multiplatform.library.template"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    namespace = "io.ai4kt.ai4kt"
+    compileSdk = 34
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk = 21
     }
 }
 
@@ -52,31 +54,31 @@ mavenPublishing {
 
     signAllPublications()
 
-    coordinates(group.toString(), "library", version.toString())
+    coordinates(group.toString(), "ai4kt", version.toString())
 
     pom {
-        name = "My library"
-        description = "A library."
-        inceptionYear = "2024"
-        url = "https://github.com/kotlin/multiplatform-library-template/"
+        name = "AI4kt"
+        description = "Bringing Python AI libraries to Kotlin."
+        inceptionYear = "2025"
+        url = "https://github.com/erfanmhat/ai4kt"
         licenses {
             license {
-                name = "XXX"
-                url = "YYY"
-                distribution = "ZZZ"
+                name = "Apache 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "repo"
             }
         }
         developers {
             developer {
-                id = "XXX"
-                name = "YYY"
-                url = "ZZZ"
+                id = "erfanmhat"
+                name = "Erfan Mahdavi Athar"
+                url = "https://github.com/erfanmhat"
             }
         }
         scm {
-            url = "XXX"
-            connection = "YYY"
-            developerConnection = "ZZZ"
+            url = "https://github.com/erfanmhat/ai4kt"
+            connection = "scm:git:git://github.com/erfanmhat/ai4kt.git"
+            developerConnection = "scm:git:ssh://github.com/erfanmhat/ai4kt.git"
         }
     }
 }
