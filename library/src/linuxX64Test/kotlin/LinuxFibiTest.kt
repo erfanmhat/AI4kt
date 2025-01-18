@@ -1,4 +1,4 @@
-package io.github.kotlin.fibonacci
+package io.ai4kt.ai4kt.fibonacci
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
