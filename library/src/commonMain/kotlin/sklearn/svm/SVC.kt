@@ -2,6 +2,8 @@ package io.ai4kt.ai4kt.sklearn.svm
 
 import io.ai4kt.ai4kt.pandas.DataFrame
 import io.ai4kt.ai4kt.fibonacci.pandas.read_csv
+import io.ai4kt.ai4kt.fibonacci.sklearn.ensemble.RandomForestClassifier
+import io.ai4kt.ai4kt.fibonacci.sklearn.model_selection.train_test_split
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -70,43 +72,31 @@ class SVC(private val learningRate: Double = 0.01, private val epochs: Int = 100
     }
 }
 
-// Helper function to convert DataFrame to List<DataPoint>
-fun DataFrame.toDataPoints(targetColumn: String): List<DataPoint> {
-    val featureColumns = columns.filter { it != targetColumn }
-    return (0 until rowCount).map { i ->
-        val features = featureColumns.map { getColumn(it)[i]?.toString()?.toDouble() ?: 0.0 }.toDoubleArray()
-        val label = getColumn(targetColumn)[i] as Int
-        DataPoint(features, label)
-    }
-}
-
 // Main function
 fun main() {
-    // Step 1: Load the dataset into a DataFrame
     val filePath = "D:\\repo\\AI4kt\\data\\breast_cancer.csv"
     val df = read_csv(filePath)
 
-    // Step 2: Convert DataFrame to List<DataPoint>
     val targetColumn = "target"
-    val data = df.toDataPoints(targetColumn)
 
-    // Step 3: Split the dataset into training and testing sets (80% train, 20% test)
-    val splitIndex = (data.size * 0.8).toInt()
-    val trainData = data.subList(0, splitIndex)
-    val testData = data.subList(splitIndex, data.size)
+    val dataSet = train_test_split(
+        df.drop(targetColumn),
+        df[targetColumn],
+        test_size = 0.2,
+        random_state = 42
+    )
 
     // Step 4: Train the SVM model
-    val svc = SVC(learningRate = 0.01, epochs = 1000, lambda = 0.01)
-    svc.train(trainData)
-
-    // Step 5: Evaluate the model
-    var correctPredictions = 0
-    for (dataPoint in testData) {
-        val prediction = svc.classify(dataPoint.features)
-        if (prediction == dataPoint.label) {
-            correctPredictions++
-        }
-    }
-    val accuracy = correctPredictions.toDouble() / testData.size
-    println("Accuracy: $accuracy")
+//    val svc = SVC(learningRate = 0.01, epochs = 1000, lambda = 0.01)
+//    svc.train(trainData)
+//
+//    var correctPredictions = 0
+//    for ((test_features, test_label) in dataSet.X_test.zip(dataSet.y_test)) {
+//        val prediction = svc.predict(test_features)
+//        if (prediction == test_label) {
+//            correctPredictions++
+//        }
+//    }
+//    val accuracy = correctPredictions.toDouble() / dataSet.y_test.size
+//    println("Accuracy: $accuracy")
 }

@@ -7,7 +7,7 @@ import kotlinx.io.files.Path
 import kotlinx.io.readString
 
 fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
-    val file = SystemFileSystem.source(Path( filePath)).buffered()
+    val file = SystemFileSystem.source(Path(filePath)).buffered()
     val lines = file.readString().split("\n")
     if (lines.isEmpty()) throw IllegalArgumentException("File is empty: $filePath")
 
@@ -31,7 +31,7 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
         Series(convertedValues)
     }
 
-    return DataFrame(columnData)
+    return DataFrame(columnData.toMutableMap())
 }
 
 // Helper function to check if a string is an integer
@@ -62,11 +62,11 @@ fun main() {
     println("Sorted DataFrame (salary descending):")
     println(sortedDf)
 
-    val selectedDf = df.select("name", "salary")
+    val selectedDf = df[listOf("name", "salary")]
     println("Selected columns (name, salary):")
     println(selectedDf)
 
-    df.addColumn("bonus", Series(listOf(1000.0, 2000.0, 3000.0)))
+    df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
     println(df)
 }

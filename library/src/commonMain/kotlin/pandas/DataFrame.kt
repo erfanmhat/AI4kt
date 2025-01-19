@@ -1,68 +1,82 @@
 package io.ai4kt.ai4kt.pandas
 
 
+import io.ai4kt.ai4kt.fibonacci.numpy.ndarray
 import io.ai4kt.ai4kt.fibonacci.pandas.Series
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class DataFrame(private val data: Map<String, Series>) {
+class DataFrame(private val data: MutableMap<String, Series>) {
 
-    // Get column names
     val columns: List<String>
         get() = data.keys.toList()
 
-    // Get number of rows
-    val rowCount: Int
-        get() = if (data.isNotEmpty()) data.values.first().size else 0
+    val shape: IntArray
+        get() = intArrayOf(data.size, if (data.isNotEmpty()) data.values.first().shape[0] else 0)
 
-    // Get number of columns
-    val columnCount: Int
-        get() = data.size
+    val values: ndarray<Any>
+        get() {
+            if (data.isEmpty()) {
+                return ndarray(shape = intArrayOf(0, 0), initialValue = null as Any?)
+            }
 
-    // Get a specific column as a Series
-    fun getColumn(columnName: String): Series {
-        return data[columnName] ?: throw NoSuchElementException("Column '$columnName' not found.")
-    }
+            val numRows = data.values.first().shape[0]
+            val numCols = data.size
 
-    // Get a specific row as a Map
-    fun getRow(index: Int): Map<String, Any?> {
-        if (index !in 0 until rowCount) throw IndexOutOfBoundsException("Row index out of bounds.")
+            val result = ndarray<Any>(shape = intArrayOf(numRows, numCols), initialValue = null as Any)
+
+            for ((colIndex, columnName) in columns.withIndex()) {
+                val series = data[columnName]!!
+                for (rowIndex in 0 until numRows) {
+                    result[rowIndex, colIndex] = series[rowIndex]!!
+                }
+            }
+
+            return result
+        }
+
+    fun iloc(index: Int): Map<String, Any?> {
+        if (index !in 0 until shape[1]) throw IndexOutOfBoundsException("Row index out of bounds.")
         return data.mapValues { it.value[index] }
     }
 
-    // Filter rows based on a condition
     fun filter(condition: (Map<String, Any?>) -> Boolean): DataFrame {
-        val filteredIndices = (0 until rowCount).filter { index ->
-            condition(getRow(index))
+        val filteredIndices = (0 until shape[1]).filter { index ->
+            condition(iloc(index))
         }
         val filteredData = data.mapValues { (_, series) ->
             Series(filteredIndices.map { series[it] })
         }
-        return DataFrame(filteredData)
+        return DataFrame(filteredData.toMutableMap())
     }
 
-    // Select specific columns
-    fun select(vararg columnNames: String): DataFrame {
+    operator fun get(columnName: String): Series {
+        return data[columnName] ?: throw NoSuchElementException("Column '$columnName' not found.")
+    }
+
+    operator fun set(key: String, value: Series) {
+        if (value.shape[0] != shape[1]) throw IllegalArgumentException("Series size must match row count.")
+        data[key] = value
+    }
+
+    operator fun get(columnNames: List<String>): DataFrame {
         val selectedData =
             columnNames.associateWith { data[it] ?: throw NoSuchElementException("Column '$it' not found.") }
-        return DataFrame(selectedData)
+        return DataFrame(selectedData.toMutableMap())
     }
 
-    // Add a new column
-    fun addColumn(columnName: String, series: Series) {
-        if (series.size != rowCount) throw IllegalArgumentException("Series size must match row count.")
-        data.toMutableMap()[columnName] = series
-    }
-
-    // Drop a column
-    fun dropColumn(columnName: String): DataFrame {
+    fun drop(columnName: String): DataFrame {
         val newData = data.filterKeys { it != columnName }
-        return DataFrame(newData)
+        return DataFrame(newData.toMutableMap())
     }
 
-    // Sort by a column
+    fun drop(columnNames: List<String>): DataFrame {
+        val newData = data.filterKeys { it !in columnNames }
+        return DataFrame(newData.toMutableMap())
+    }
+
     fun sortBy(columnName: String, ascending: Boolean = true): DataFrame {
-        val series = getColumn(columnName)
+        val series = this[columnName]
         val sortedIndices = series.toList().withIndex()
             .sortedBy { (_, value) -> value as? Comparable<Any> }
             .map { it.index }
@@ -70,50 +84,64 @@ class DataFrame(private val data: Map<String, Series>) {
         val sortedData = data.mapValues { (_, series) ->
             Series(sortedIndices.map { series[it] })
         }
-        return DataFrame(sortedData)
+        return DataFrame(sortedData.toMutableMap())
     }
 
-    // Aggregate functions
     fun sum(columnName: String): Double {
-        val column = getColumn(columnName)
+        val column = this[columnName]
         return column.toList().filterIsInstance<Number>().sumOf { it.toDouble() }
     }
 
     fun mean(columnName: String): Double {
-        val column = getColumn(columnName)
+        val column = this[columnName]
         val numbers = column.toList().filterIsInstance<Number>()
         return numbers.sumOf { it.toDouble() } / numbers.size
     }
 
     fun min(columnName: String): Any? {
-        val column = getColumn(columnName)
+        val column = this[columnName]
         return column.toList().filterNotNull().filterIsInstance<Comparable<Any>>().minOrNull()
     }
 
     fun max(columnName: String): Any? {
-        val column = getColumn(columnName)
+        val column = this[columnName]
         return column.toList().filterNotNull().filterIsInstance<Comparable<Any>>().maxOrNull()
     }
 
     fun std(columnName: String): Double {
         val mean = mean(columnName)
-        val column = getColumn(columnName)
+        val column = this[columnName]
         val variance = column.toList().filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
         return sqrt(variance)
     }
 
     fun get_var(columnName: String): Double {
         val mean = mean(columnName)
-        val column = getColumn(columnName)
+        val column = this[columnName]
         return column.toList().filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
     }
 
-    // Pretty-printing
+    /**
+     * Returns a subset of the DataFrame based on the given indices.
+     *
+     * @param indices The indices of the rows to include in the subset.
+     * @return A new DataFrame containing the specified rows.
+     */
+    fun slice(indices: List<Int>): DataFrame {
+        val slicedData = mutableMapOf<String, Series>()
+        for ((columnName, series) in this.data) {
+            // از تابع slice در Series استفاده می‌کنیم
+            val slicedSeries = series.slice(indices)
+            slicedData[columnName] = slicedSeries
+        }
+        return DataFrame(slicedData)
+    }
+
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append("DataFrame:\n")
         builder.append(columns.joinToString("\t") + "\n")
-        for (i in 0 until rowCount) {
+        for (i in 0 until shape[1]) {
             builder.append(data.values.map { it[i] }.joinToString("\t") + "\n")
         }
         return builder.toString()
@@ -127,9 +155,9 @@ fun main() {
         "salary" to Series(listOf(50000.0, 60000.0, 70000.0))
     )
 
-    val df = DataFrame(data)
+    val df = DataFrame(data.toMutableMap())
 
-    println(df) // Pretty-printed DataFrame
+    println(df)
 
     println("Sum of salaries: ${df.sum("salary")}")
     println("Mean age: ${df.mean("age")}")
@@ -144,11 +172,11 @@ fun main() {
     println("Sorted DataFrame (salary descending):")
     println(sortedDf)
 
-    val selectedDf = df.select("name", "salary")
+    val selectedDf = df[listOf("name", "salary")]
     println("Selected columns (name, salary):")
     println(selectedDf)
 
-    df.addColumn("bonus", Series(listOf(1000.0, 2000.0, 3000.0)))
+    df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
     println(df)
 }
