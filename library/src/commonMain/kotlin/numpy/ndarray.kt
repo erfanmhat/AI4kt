@@ -1,7 +1,7 @@
 package io.ai4kt.ai4kt.fibonacci.numpy
 
 class ndarray<T : Any?>(
-    val shape: IntArray,
+    val shape: List<Int>,
     initialValue: T? = null
 ) : Iterable<ndarray<T>> {
     var data: Array<Any?>
@@ -15,7 +15,7 @@ class ndarray<T : Any?>(
 
     private fun getIndex(indices: Array<out Int?>): List<Int> {
         if (indices.size > shape.size) {
-            throw IllegalArgumentException("Too many indices for array " + indices.contentToString())
+            throw IllegalArgumentException("Too many indices for array with shape $shape and indices: ${indices.contentToString()}")
         }
 
         // Generate all possible combinations of indices
@@ -79,7 +79,7 @@ class ndarray<T : Any?>(
     }
 
     private fun getSubArray(indices: Array<out Int?>): ndarray<T> {
-        val newShape = shape.copyOfRange(indices.size, shape.size)
+        val newShape = shape.subList(indices.size, shape.size)
         val newSize = newShape.fold(1) { acc, dim -> acc * dim }
         val newData = Array(newSize) { null as Any? }
 
@@ -102,7 +102,7 @@ class ndarray<T : Any?>(
 
             override fun next(): ndarray<T> {
                 if (!hasNext()) throw NoSuchElementException("No more elements in the array")
-                return ndarray(intArrayOf(1), data[currentIndex++] as T)
+                return ndarray(listOf(1), data[currentIndex++] as T)
             }
         }
     }
@@ -140,7 +140,7 @@ class ndarray<T : Any?>(
 }
 
 fun main() {
-    val array = ndarray(intArrayOf(2, 3, 4), 0)
+    val array = ndarray(listOf(2, 3, 4), 0)
 
     // Set values using partial indices
     array[0, null, 2] =

@@ -32,7 +32,7 @@ fun train_test_split(
 ): DataSet {
     require(X.shape[0] != 0 && X.shape[1] != 0) { "Input features (X) cannot be empty." }
     require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
-    require(X.shape[0] == y.shape[0]) { "X and y must have the same length." }
+    require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape}, y:${y.shape}." }
 
     if (random_state != null) {
         Random(random_state)
@@ -93,7 +93,7 @@ fun train_test_split(
 ): DataSet {
     require(X.shape[0] != 0) { "Input features (X) cannot be empty." }
     require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
-    require(X.shape[0] == y.shape[0]) { "X and y must have the same length." }
+    require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape}, y:${y.shape}." }
 
     if (random_state != null) {
         Random(random_state)
@@ -118,7 +118,11 @@ fun train_test_split(
     val train_indices = indices.subList(0, n_train)
     val test_indices = indices.subList(n_train, n_train + n_test)
 
-    val X_train = train_indices.map { X[it, null] }.to_ndarray<Double>()
+    println(train_indices)
+    val X_train = train_indices.map {
+        println(X[it, null])
+        X[it, null]
+    }.to_ndarray<Double>()
     val X_test = test_indices.map { X[it, null] }.to_ndarray<Double>()
     val y_train = train_indices.map { y[it] }.to_ndarray<Int>()
     val y_test = test_indices.map { y[it] }.to_ndarray<Int>()

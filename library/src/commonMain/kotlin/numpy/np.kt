@@ -9,18 +9,18 @@ object np {
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> array(p_object: List<T?>): ndarray<T> {
-        if (p_object.isEmpty()) return ndarray(shape = intArrayOf(0), initialValue = null as T)
+        if (p_object.isEmpty()) return ndarray(shape = listOf(0), initialValue = null as T)
 
         val containsNull = p_object.any { it == null }
         return if (containsNull) {
-            val result = ndarray<T?>(shape = intArrayOf(p_object.size), initialValue = p_object[0])
+            val result = ndarray<T?>(shape = listOf(p_object.size), initialValue = p_object[0])
             for ((index, item) in p_object.withIndex()) {
                 result[index] = item
             }
             result as ndarray<T>
         } else {
             val nonNullList = p_object.mapNotNull { it }
-            val result: ndarray<T> = ndarray(shape = intArrayOf(nonNullList.size), initialValue = nonNullList[0])
+            val result: ndarray<T> = ndarray(shape = listOf(nonNullList.size), initialValue = nonNullList[0])
             for ((index, item) in p_object.withIndex()) {
                 result[index] = item!!
             }
@@ -68,7 +68,7 @@ inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
     // بررسی اینکه لیست خالی نباشد
     if (this.isEmpty()) {
         return ndarray(
-            shape = intArrayOf(0, 0), initialValue = when (T::class) {
+            shape = listOf(0, 0), initialValue = when (T::class) {
                 Double::class -> 0.0 as T
                 Int::class -> 0 as T
                 else -> throw IllegalArgumentException("Unsupported type")
@@ -106,7 +106,7 @@ inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
 
     // ایجاد ndarray با ابعاد مناسب
     val result = ndarray<T>(
-        shape = intArrayOf(numRows, numCols), initialValue = when (T::class) {
+        shape = listOf(numRows, numCols), initialValue = when (T::class) {
             Double::class -> 0.0 as T
             Int::class -> 0 as T
             else -> throw IllegalArgumentException("Unsupported type")
@@ -118,7 +118,7 @@ inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
         for (j in 0 until numCols) {
             result[i, j] = when {
                 isListOfLists -> (this[i] as List<T>)[j]
-                isListOfNdarray -> (this[i] as ndarray<T>)[j]
+                isListOfNdarray -> (this[i] as ndarray<T>)[j].data[0] as T
                 else -> throw IllegalArgumentException("Invalid input type")
             } as T
         }

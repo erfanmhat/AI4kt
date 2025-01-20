@@ -27,8 +27,8 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
 
     // Recursively build the tree
     private fun buildTree(X: ndarray<Double>, y: ndarray<Int>, depth: Int): TreeNode? {
-        val numSamples = y.size
-        val numFeatures = X.size
+        val numSamples = y.shape[0]
+        val numFeatures = X.shape[1]
 
         // Stop if max depth is reached or too few samples
         if (depth >= maxDepth || numSamples < minSamplesSplit) {
@@ -73,7 +73,7 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
         // Try random features
         val featureIndices = (0 until numFeatures).shuffled().take(sqrt(numFeatures.toDouble()).toInt())
         for (featureIndex in featureIndices) {
-            val thresholds = X.map { it[featureIndex] }.distinct()
+            val thresholds = X[null, featureIndex].distinct()
             for (threshold in thresholds) {
                 val (left, right) = X.zip(y)
                     .partition { (it.first[featureIndex].data[0] as Double) < threshold.data[0] as Double }
@@ -101,16 +101,16 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
         X_right: ndarray<Double>,
         y_right: ndarray<Int>
     ): Double {
-        val n = X_left.size + X_right.size
-        val pLeft = X_left.size.toDouble() / n
-        val pRight = X_right.size.toDouble() / n
+        val n = X_left.shape[0] + X_right.shape[0]
+        val pLeft = X_left.shape[0].toDouble() / n
+        val pRight = X_right.shape[0].toDouble() / n
         return pLeft * giniImpurity(X_left, y_left) + pRight * giniImpurity(X_right, y_right)
     }
 
     // Calculate Gini impurity
     private fun giniImpurity(X: ndarray<Double>, y: ndarray<Int>): Double {
         val labelCounts = X.zip(y).groupingBy { it.second }.eachCount()
-        val total = X.size.toDouble()
+        val total = X.shape[0].toDouble()
         return 1.0 - labelCounts.values.sumOf { (it / total).pow(2) }
     }
 
@@ -188,6 +188,10 @@ fun main() {
 
     val targetColumn = "target"
 
+//    println(df.shape)
+//    println(df.drop(targetColumn).shape)
+//    println(df[targetColumn].shape)
+//    return
     val dataSet = train_test_split(
         df.drop(targetColumn),
         df[targetColumn],
@@ -205,6 +209,6 @@ fun main() {
             correctPredictions++
         }
     }
-    val accuracy = correctPredictions.toDouble() / dataSet.y_test.size
+    val accuracy = correctPredictions.toDouble() / dataSet.y_test.shape[0]
     println("Accuracy: $accuracy")
 }

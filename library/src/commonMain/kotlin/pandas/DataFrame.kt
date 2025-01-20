@@ -11,19 +11,19 @@ class DataFrame(private val data: MutableMap<String, Series>) {
     val columns: List<String>
         get() = data.keys.toList()
 
-    val shape: IntArray
-        get() = intArrayOf(data.size, if (data.isNotEmpty()) data.values.first().shape[0] else 0)
+    val shape: List<Int>
+        get() = listOf(if (data.isNotEmpty()) data.values.first().shape[0] else 0, data.size)
 
     val values: ndarray<Any>
         get() {
             if (data.isEmpty()) {
-                return ndarray(shape = intArrayOf(0, 0), initialValue = null as Any?)
+                return ndarray(shape = listOf(0, 0), initialValue = null as Any?)
             }
 
             val numRows = data.values.first().shape[0]
             val numCols = data.size
 
-            val result = ndarray<Any>(shape = intArrayOf(numRows, numCols), initialValue = null as Any)
+            val result = ndarray<Any>(shape = listOf(numRows, numCols), initialValue = null as Any?)
 
             for ((colIndex, columnName) in columns.withIndex()) {
                 val series = data[columnName]!!

@@ -17,8 +17,8 @@ class Series(private val data: List<Any?>, private val index: List<Any>? = null)
 
     private val lazyData by lazy { data }
 
-    val shape: IntArray
-        get() = intArrayOf(data.size)
+    val shape: List<Int>
+        get() = listOf(data.size)
 
     operator fun get(position: Int): Any? {
         return data[position]
