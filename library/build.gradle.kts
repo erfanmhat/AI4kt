@@ -29,7 +29,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
-                // Add additional dependencies here
             }
         }
         val commonTest by getting {

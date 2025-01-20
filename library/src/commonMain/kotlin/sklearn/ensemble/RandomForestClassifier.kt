@@ -59,13 +59,13 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
             featureIndex = bestFeatureIndex,
             threshold = bestThreshold,
             left = buildTree(
-                X = X[leftIndices].to_ndarray(),
-                y = y[leftIndices].to_ndarray(),
+                X = leftIndices.map { X[it] }.to_ndarray(),
+                y = leftIndices.map { y[it] }.to_ndarray(),
                 depth = depth + 1
             ),
             right = buildTree(
-                X = X[rightIndices].to_ndarray(),
-                y = y[rightIndices].to_ndarray(),
+                X = rightIndices.map { X[it] }.to_ndarray(),
+                y = rightIndices.map { y[it] }.to_ndarray(),
                 depth = depth + 1
             )
         )
@@ -92,8 +92,8 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
                     }
                 }
                 val impurity = weightedImpurity(
-                    y_left = y[leftIndices].to_ndarray(),
-                    y_right = y[rightIndices].to_ndarray()
+                    y_left = leftIndices.map { y[it] }.to_ndarray(),
+                    y_right = rightIndices.map { y[it] }.to_ndarray()
                 )
                 if (impurity < bestImpurity) {
                     bestImpurity = impurity
@@ -159,8 +159,8 @@ class RandomForestClassifier(
             val bootstrapSampleIndices = List(y.shape[0]) { (0 until y.shape[0]).random() }
             val tree = DecisionTree(maxDepth, minSamplesSplit)
             tree.fit(
-                X = X[bootstrapSampleIndices].to_ndarray(),
-                y = y[bootstrapSampleIndices].to_ndarray()
+                X = bootstrapSampleIndices.map { X[it] }.to_ndarray(),
+                y = bootstrapSampleIndices.map { y[it] }.to_ndarray()
             )
             trees.add(tree)
         }
