@@ -72,6 +72,11 @@ class ndarray<T : Any?>(
         return np.array(x.toList() as List<Any>) as ndarray<T>
     }
 
+    // todo fix this function to return ndarray<T>
+    operator fun get(indices: List<Int>): List<ndarray<T>> {
+        return indices.map { this[it] }
+    }
+
     operator fun set(vararg indices: Int?, value: T) {
         for (index in getIndex(indices)) {
             data[index] = value

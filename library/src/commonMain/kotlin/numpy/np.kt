@@ -63,8 +63,8 @@ object np {
  * @param T The type of elements in the list (e.g., Double, Int).
  * @return An ndarray containing the elements of the list.
  */
-@Suppress("UNCHECKED_CAST", "IMPLICIT_CAST_TO_ANY")
-inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
+@Suppress("UNCHECKED_CAST")
+inline fun <reified T : Any> List<*>.to_ndarray(): ndarray<T> {
     // بررسی اینکه لیست خالی نباشد
     if (this.isEmpty()) {
         return ndarray(
@@ -105,7 +105,7 @@ inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
     }
 
     // ایجاد ndarray با ابعاد مناسب
-    val result = ndarray<T>(
+    val result = ndarray(
         shape = listOf(numRows, numCols), initialValue = when (T::class) {
             Double::class -> 0.0 as T
             Int::class -> 0 as T
@@ -120,7 +120,7 @@ inline fun <reified T : Number> List<*>.to_ndarray(): ndarray<T> {
                 isListOfLists -> (this[i] as List<T>)[j]
                 isListOfNdarray -> (this[i] as ndarray<T>)[j].data[0] as T
                 else -> throw IllegalArgumentException("Invalid input type")
-            } as T
+            }
         }
     }
 
