@@ -6,10 +6,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import org.jetbrains.kotlinx.multik.ndarray.operations.sum
 import kotlin.math.exp
 
-import org.jetbrains.kotlinx.multik.api.*
-import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.max
-import kotlin.math.exp
 
 class ActivationSoftmax {
     fun forward(inputs: D2Array<Double>): D2Array<Double> {
