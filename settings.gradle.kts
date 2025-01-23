@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AI4kt"
-include(":library")
+include(":AI4kt")

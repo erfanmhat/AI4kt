@@ -1,11 +1,17 @@
 package io.ai4kt.ai4kt.fibonacci.sklearn.model_selection
 
-import io.ai4kt.ai4kt.fibonacci.numpy.ndarray
-import io.ai4kt.ai4kt.fibonacci.numpy.np
-import io.ai4kt.ai4kt.fibonacci.numpy.to_ndarray
 import io.ai4kt.ai4kt.fibonacci.pandas.Series
 import io.ai4kt.ai4kt.fibonacci.sklearn.DataSet
 import io.ai4kt.ai4kt.pandas.DataFrame
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.api.zeros
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.filter
+import org.jetbrains.kotlinx.multik.ndarray.operations.filterMultiIndexed
 import kotlin.random.Random
 
 
@@ -23,50 +29,23 @@ import kotlin.random.Random
  */
 fun train_test_split(
     X: DataFrame,
-    y: Series,
+    y: Series<Int>,
     test_size: Double? = 0.2,
     train_size: Double? = null,
     random_state: Int? = null,
     shuffle: Boolean = true,
     stratify: List<Int>? = null
 ): DataSet {
-    require(X.shape[0] != 0 && X.shape[1] != 0) { "Input features (X) cannot be empty." }
-    require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
-    require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape}, y:${y.shape}." }
-
-    if (random_state != null) {
-        Random(random_state)
-    }
-
-    val n_samples = X.shape[0]
-    val (n_train, n_test) = calculate_train_test_sizes(n_samples, test_size, train_size)
-
-    val indices = if (shuffle) {
-        if (stratify != null) {
-            stratified_shuffle_split(y.values as ndarray<Int>, stratify, n_train, n_test)
-        } else {
-            (0 until n_samples).shuffled()
-        }
-    } else {
-        if (stratify != null) {
-            throw IllegalArgumentException("Stratified split is not supported when shuffle=false.")
-        }
-        (0 until n_samples).toList()
-    }
-
-    val train_indices = indices.subList(0, n_train)
-    val test_indices = indices.subList(n_train, n_train + n_test)
-
-    val X_train = X.slice(train_indices)
-    val X_test = X.slice(test_indices)
-    val y_train = y.slice(train_indices)
-    val y_test = y.slice(test_indices)
-
-    return DataSet(
-        X_train = X_train.values as ndarray<Double>,
-        X_test = X_test.values as ndarray<Double>,
-        y_train = y_train.values as ndarray<Int>,
-        y_test = y_test.values as ndarray<Int>
+    val X_D2Array = X.getValues(Double::class)
+    val y_D1Array = y.getValues(Int::class)
+    return train_test_split(
+        X = X_D2Array,
+        y = y_D1Array,
+        test_size = test_size,
+        train_size = train_size,
+        random_state = random_state,
+        shuffle = shuffle,
+        stratify = stratify
     )
 }
 
@@ -83,8 +62,8 @@ fun train_test_split(
  * @return A list containing train-test split of inputs: [X_train, X_test, y_train, y_test].
  */
 fun train_test_split(
-    X: ndarray<Double>,
-    y: ndarray<Int>,
+    X: D2Array<Double>,
+    y: D1Array<Int>,
     test_size: Double? = 0.2,
     train_size: Double? = null,
     random_state: Int? = null,
@@ -93,7 +72,7 @@ fun train_test_split(
 ): DataSet {
     require(X.shape[0] != 0) { "Input features (X) cannot be empty." }
     require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
-    require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape}, y:${y.shape}." }
+    require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape.contentToString()}, y:${y.shape.contentToString()}." }
 
     if (random_state != null) {
         Random(random_state)
@@ -118,14 +97,29 @@ fun train_test_split(
     val train_indices = indices.subList(0, n_train)
     val test_indices = indices.subList(n_train, n_train + n_test)
 
-    println(train_indices)
-    val X_train = train_indices.map {
-        println(X[it, null])
-        X[it, null]
-    }.to_ndarray<Double>()
-    val X_test = test_indices.map { X[it, null] }.to_ndarray<Double>()
-    val y_train = train_indices.map { y[it] }.to_ndarray<Int>()
-    val y_test = test_indices.map { y[it] }.to_ndarray<Int>()
+
+    val X_train = mk.zeros<Double>(train_indices.size, X.shape[1])
+    for ((i, idx) in train_indices.withIndex()) {
+        X_train[i] = X[idx]
+    }
+
+    // Create X_test by filtering rows based on test_indices
+    val X_test = mk.zeros<Double>(test_indices.size, X.shape[1])
+    for ((i, idx) in test_indices.withIndex()) {
+        X_test[i] = X[idx]
+    }
+
+    // Create y_train by filtering elements based on train_indices
+    val y_train = mk.zeros<Int>(train_indices.size)
+    for ((i, idx) in train_indices.withIndex()) {
+        y_train[i] = y[idx]
+    }
+
+    // Create y_test by filtering elements based on test_indices
+    val y_test = mk.zeros<Int>(test_indices.size)
+    for ((i, idx) in test_indices.withIndex()) {
+        y_test[i] = y[idx]
+    }
 
     return DataSet(
         X_train = X_train,
@@ -172,7 +166,7 @@ private fun calculate_train_test_sizes(
  * @return A list of shuffled indices.
  */
 private fun stratified_shuffle_split(
-    y: ndarray<Int>,
+    y: D1Array<Int>,
     stratify: List<Int>,
     n_train: Int,
     n_test: Int
@@ -185,7 +179,7 @@ private fun stratified_shuffle_split(
         // جمع‌آوری اندیس‌های مربوط به کلاس فعلی
         val clsIndices = mutableListOf<Int>()
         for (i in 0 until y.size) {
-            if (y[i].data[0] == cls) {
+            if (y[i] == cls) {
                 clsIndices.add(i)
             }
         }
@@ -207,14 +201,16 @@ private fun stratified_shuffle_split(
 }
 
 fun main() {
-    val X = listOf(
-        listOf(1.0, 2.0),
-        listOf(2.0, 3.0),
-        listOf(3.0, 4.0),
-        listOf(4.0, 5.0),
-        listOf(5.0, 6.0)
-    ).to_ndarray<Double>()
-    val y = np.array(listOf(0, 1, 0, 1, 0))
+    val X = mk.ndarray(
+        mk[
+            mk[1.0, 2.0],
+            mk[2.0, 3.0],
+            mk[3.0, 4.0],
+            mk[4.0, 5.0],
+            mk[5.0, 6.0]
+        ]
+    )
+    val y = mk.ndarray(mk[0, 1, 0, 1, 0])
 
     val (X_train, X_test, y_train, y_test) = train_test_split(X, y, test_size = 0.2, random_state = 42)
 

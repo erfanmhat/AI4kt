@@ -31,7 +31,7 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
         Series(convertedValues)
     }
 
-    return DataFrame(columnData.toMutableMap())
+    return DataFrame(columnData.toMutableMap()as MutableMap<String, Series<Any?>>)
 }
 
 // Helper function to check if a string is an integer
@@ -45,7 +45,7 @@ fun String?.isNumeric(): Boolean {
 }
 
 fun main() {
-    val df = read_csv("./data/test_data.csv")
+    val df = read_csv("D:\\repo\\AI4kt\\data\\test_data.csv")
 
     println(df) // Pretty-printed DataFrame
 
@@ -57,6 +57,7 @@ fun main() {
     val filteredDf = df.filter { (it["age"] as Int) > 25 }
     println("Filtered DataFrame (age > 25):")
     println(filteredDf)
+    //todo fix this bug
 
     val sortedDf = df.sortBy("salary", ascending = false)
     println("Sorted DataFrame (salary descending):")

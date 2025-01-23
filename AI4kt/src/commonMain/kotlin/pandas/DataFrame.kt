@@ -1,39 +1,21 @@
 package io.ai4kt.ai4kt.pandas
 
 
-import io.ai4kt.ai4kt.fibonacci.numpy.ndarray
 import io.ai4kt.ai4kt.fibonacci.pandas.Series
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlin.reflect.KClass
 
-class DataFrame(private val data: MutableMap<String, Series>) {
+class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
 
     val columns: List<String>
         get() = data.keys.toList()
 
     val shape: List<Int>
         get() = listOf(if (data.isNotEmpty()) data.values.first().shape[0] else 0, data.size)
-
-    val values: ndarray<Any>
-        get() {
-            if (data.isEmpty()) {
-                return ndarray(shape = listOf(0, 0), initialValue = null as Any?)
-            }
-
-            val numRows = data.values.first().shape[0]
-            val numCols = data.size
-
-            val result = ndarray<Any>(shape = listOf(numRows, numCols), initialValue = null as Any?)
-
-            for ((colIndex, columnName) in columns.withIndex()) {
-                val series = data[columnName]!!
-                for (rowIndex in 0 until numRows) {
-                    result[rowIndex, colIndex] = series[rowIndex]!!
-                }
-            }
-
-            return result
-        }
 
     fun iloc(index: Int): Map<String, Any?> {
         if (index !in 0 until shape[1]) throw IndexOutOfBoundsException("Row index out of bounds.")
@@ -47,14 +29,14 @@ class DataFrame(private val data: MutableMap<String, Series>) {
         val filteredData = data.mapValues { (_, series) ->
             Series(filteredIndices.map { series[it] })
         }
-        return DataFrame(filteredData.toMutableMap())
+        return DataFrame(filteredData.toMutableMap() as MutableMap<String, Series<Any?>>)
     }
 
-    operator fun get(columnName: String): Series {
+    operator fun get(columnName: String): Series<Any?> {
         return data[columnName] ?: throw NoSuchElementException("Column '$columnName' not found.")
     }
 
-    operator fun set(key: String, value: Series) {
+    operator fun set(key: String, value: Series<Any?>) {
         if (value.shape[0] != shape[1]) throw IllegalArgumentException("Series size must match row count.")
         data[key] = value
     }
@@ -63,6 +45,14 @@ class DataFrame(private val data: MutableMap<String, Series>) {
         val selectedData =
             columnNames.associateWith { data[it] ?: throw NoSuchElementException("Column '$it' not found.") }
         return DataFrame(selectedData.toMutableMap())
+    }
+
+    fun <T : Any> getValues(clazz: KClass<T>): D2Array<T> {
+        return when (clazz) {
+            Double::class -> (mk.ndarray(data.map { it.value.toList() } as List<List<Double>>) as D2Array<T>).transpose()
+            Int::class -> (mk.ndarray(data.map { it.value.toList() } as List<List<Int>>) as D2Array<T>).transpose()
+            else -> throw IllegalArgumentException("Unsupported type: ${clazz::class}")
+        }
     }
 
     fun drop(columnName: String): DataFrame {
@@ -84,7 +74,7 @@ class DataFrame(private val data: MutableMap<String, Series>) {
         val sortedData = data.mapValues { (_, series) ->
             Series(sortedIndices.map { series[it] })
         }
-        return DataFrame(sortedData.toMutableMap())
+        return DataFrame(sortedData.toMutableMap() as MutableMap<String, Series<Any?>>)
     }
 
     fun sum(columnName: String): Double {
@@ -121,22 +111,6 @@ class DataFrame(private val data: MutableMap<String, Series>) {
         return column.toList().filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
     }
 
-    /**
-     * Returns a subset of the DataFrame based on the given indices.
-     *
-     * @param indices The indices of the rows to include in the subset.
-     * @return A new DataFrame containing the specified rows.
-     */
-    fun slice(indices: List<Int>): DataFrame {
-        val slicedData = mutableMapOf<String, Series>()
-        for ((columnName, series) in this.data) {
-            // از تابع slice در Series استفاده می‌کنیم
-            val slicedSeries = series.slice(indices)
-            slicedData[columnName] = slicedSeries
-        }
-        return DataFrame(slicedData)
-    }
-
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append("DataFrame:\n")
@@ -155,7 +129,7 @@ fun main() {
         "salary" to Series(listOf(50000.0, 60000.0, 70000.0))
     )
 
-    val df = DataFrame(data.toMutableMap())
+    val df = DataFrame(data.toMutableMap() as MutableMap<String, Series<Any?>>)
 
     println(df)
 
@@ -167,6 +141,7 @@ fun main() {
     val filteredDf = df.filter { (it["age"] as Int) > 25 }
     println("Filtered DataFrame (age > 25):")
     println(filteredDf)
+    //todo fix this bug
 
     val sortedDf = df.sortBy("salary", ascending = false)
     println("Sorted DataFrame (salary descending):")

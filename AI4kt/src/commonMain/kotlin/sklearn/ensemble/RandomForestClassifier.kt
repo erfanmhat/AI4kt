@@ -1,9 +1,18 @@
 package io.ai4kt.ai4kt.fibonacci.sklearn.ensemble
 
-import io.ai4kt.ai4kt.fibonacci.numpy.ndarray
-import io.ai4kt.ai4kt.fibonacci.numpy.to_ndarray
+import io.ai4kt.ai4kt.fibonacci.pandas.Series
 import io.ai4kt.ai4kt.fibonacci.pandas.read_csv
+import io.ai4kt.ai4kt.fibonacci.sklearn.metrics.accuracy_score
 import io.ai4kt.ai4kt.fibonacci.sklearn.model_selection.train_test_split
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.api.zeros
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.distinct
+import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -21,12 +30,12 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
 
     private var root: TreeNode? = null
 
-    fun fit(X: ndarray<Double>, y: ndarray<Int>) {
+    fun fit(X: D2Array<Double>, y: D1Array<Int>) {
         root = buildTree(X = X, y = y, depth = 0)
     }
 
     // Recursively build the tree
-    private fun buildTree(X: ndarray<Double>, y: ndarray<Int>, depth: Int): TreeNode {
+    private fun buildTree(X: D2Array<Double>, y: D1Array<Int>, depth: Int): TreeNode {
         val numSamples = y.shape[0]
         val numFeatures = X.shape[1]
 
@@ -42,7 +51,7 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
         val leftIndices = mutableListOf<Int>()
         val rightIndices = mutableListOf<Int>()
         for (i in 0 until numSamples) {
-            if ((X[i, bestFeatureIndex].data[0] as Double) < bestThreshold) {
+            if (X[i, bestFeatureIndex] < bestThreshold) {
                 leftIndices.add(i)
             } else {
                 rightIndices.add(i)
@@ -59,20 +68,20 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
             featureIndex = bestFeatureIndex,
             threshold = bestThreshold,
             left = buildTree(
-                X = leftIndices.map { X[it] }.to_ndarray(),
-                y = leftIndices.map { y[it] }.to_ndarray(),
+                X = X.selectRowD2Array(leftIndices),
+                y = y.selectRowD1Array(leftIndices),
                 depth = depth + 1
             ),
             right = buildTree(
-                X = rightIndices.map { X[it] }.to_ndarray(),
-                y = rightIndices.map { y[it] }.to_ndarray(),
+                X = X.selectRowD2Array(rightIndices),
+                y = y.selectRowD1Array(rightIndices),
                 depth = depth + 1
             )
         )
     }
 
     // Find the best split for a node
-    private fun findBestSplit(X: ndarray<Double>, y: ndarray<Int>, numFeatures: Int): Pair<Int, Double> {
+    private fun findBestSplit(X: D2Array<Double>, y: D1Array<Int>, numFeatures: Int): Pair<Int, Double> {
         var bestFeatureIndex = -1
         var bestThreshold = 0.0
         var bestImpurity = Double.MAX_VALUE
@@ -80,25 +89,25 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
         // Try random features
         val featureIndices = (0 until numFeatures).shuffled().take(sqrt(numFeatures.toDouble()).toInt())
         for (featureIndex in featureIndices) {
-            val thresholds = X[null, featureIndex].distinct()
+            val thresholds = X[0..<X.shape[0], featureIndex].distinct()
             for (threshold in thresholds) {
                 val leftIndices = mutableListOf<Int>()
                 val rightIndices = mutableListOf<Int>()
                 for (i in 0 until y.shape[0]) {
-                    if ((X[i, featureIndex].data[0] as Double) < threshold.data[0] as Double) {
+                    if (X[i, featureIndex] < threshold) {
                         leftIndices.add(i)
                     } else {
                         rightIndices.add(i)
                     }
                 }
                 val impurity = weightedImpurity(
-                    y_left = leftIndices.map { y[it] }.to_ndarray(),
-                    y_right = rightIndices.map { y[it] }.to_ndarray()
+                    y_left = y.selectRowD1Array(leftIndices),
+                    y_right = y.selectRowD1Array(rightIndices),
                 )
                 if (impurity < bestImpurity) {
                     bestImpurity = impurity
                     bestFeatureIndex = featureIndex
-                    bestThreshold = threshold.data[0] as Double
+                    bestThreshold = threshold
                 }
             }
         }
@@ -107,7 +116,7 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
     }
 
     // Calculate weighted impurity (Gini index)
-    private fun weightedImpurity(y_left: ndarray<Int>, y_right: ndarray<Int>): Double {
+    private fun weightedImpurity(y_left: D1Array<Int>, y_right: D1Array<Int>): Double {
         val n = y_left.shape[0] + y_right.shape[0]
         val pLeft = y_left.shape[0].toDouble() / n
         val pRight = y_right.shape[0].toDouble() / n
@@ -115,28 +124,28 @@ class DecisionTree(private val maxDepth: Int = 10, private val minSamplesSplit: 
     }
 
     // Calculate Gini impurity
-    private fun giniImpurity(y: ndarray<Int>): Double {
-        val labelCounts = y.groupingBy { it }.eachCount()
+    private fun giniImpurity(y: D1Array<Int>): Double {
+        val labelCounts = y.toList().groupingBy { it }.eachCount()
         val total = y.shape[0].toDouble()
         return 1.0 - labelCounts.values.sumOf { (it / total).pow(2) }
     }
 
     // Get the majority label in a dataset
-    private fun majorityLabel(y: ndarray<Int>): Int {
-        return y.groupingBy { it.data[0] as Int }.eachCount().maxByOrNull { it.value }?.key ?: 0
+    private fun majorityLabel(y: D1Array<Int>): Int {
+        return y.toList().groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0
     }
 
     // Predict the label for a single data point
-    fun predict(features: ndarray<Double>): Int {
+    fun predict(features: D1Array<Double>): Int {
         return predictNode(root, features)
     }
 
     // Recursively predict using the tree
-    private fun predictNode(node: TreeNode?, features: ndarray<Double>): Int {
+    private fun predictNode(node: TreeNode?, features: D1Array<Double>): Int {
         if (node?.label != null) {
             return node.label
         }
-        return if ((features[node!!.featureIndex!!].data[0] as Double) < node.threshold!!) {
+        return if (features[node!!.featureIndex!!] < node.threshold!!) {
             predictNode(node.left, features)
         } else {
             predictNode(node.right, features)
@@ -154,22 +163,31 @@ class RandomForestClassifier(
     private val trees = mutableListOf<DecisionTree>()
 
     // Train the Random Forest
-    fun fit(X: ndarray<Double>, y: ndarray<Int>) {
+    fun fit(X: D2Array<Double>, y: D1Array<Int>) {
         for (i in 0 until numTrees) {
             val bootstrapSampleIndices = List(y.shape[0]) { (0 until y.shape[0]).random() }
+            val bootstrapSamples_X = mk.zeros<Double>(bootstrapSampleIndices.size, X.shape[1])
+            for ((i, idx) in bootstrapSampleIndices.withIndex()) {
+                bootstrapSamples_X[i] = X[idx]
+            }
+            val bootstrapSamples_y = mk.zeros<Int>(bootstrapSampleIndices.size)
+            for ((i, idx) in bootstrapSampleIndices.withIndex()) {
+                bootstrapSamples_y[i] = y[idx]
+            }
             val tree = DecisionTree(maxDepth, minSamplesSplit)
-            tree.fit(
-                X = bootstrapSampleIndices.map { X[it] }.to_ndarray(),
-                y = bootstrapSampleIndices.map { y[it] }.to_ndarray()
-            )
+            tree.fit(X = bootstrapSamples_X, y = bootstrapSamples_y)
             trees.add(tree)
         }
     }
 
     // Predict the label for a single data point
-    fun predict(features: ndarray<Double>): Int {
-        val predictions = trees.map { it.predict(features) }
-        return predictions.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0
+    fun predict(X: D2Array<Double>): D1Array<Int> {
+        val result = mutableListOf<Int>()
+        for (index in 0 until X.shape[0]) {
+            val predictions = trees.map { it.predict(X[index] as D1Array<Double>) }
+            result.add(predictions.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: 0)
+        }
+        return mk.ndarray(result)
     }
 }
 
@@ -182,7 +200,7 @@ fun main() {
 
     val dataSet = train_test_split(
         df.drop(targetColumn),
-        df[targetColumn],
+        df[targetColumn] as Series<Int>,
         test_size = 0.2,
         random_state = 42
     )
@@ -190,13 +208,15 @@ fun main() {
     val randomForest = RandomForestClassifier(numTrees = 100, maxDepth = 10, minSamplesSplit = 2)
     randomForest.fit(X = dataSet.X_train, y = dataSet.y_train)
 
-    var correctPredictions = 0
-    for (i in 0 until dataSet.X_test.shape[0]) {
-        val prediction = randomForest.predict(dataSet.X_test[i])
-        if (prediction == dataSet.y_test[i].data[0] as Int) {
-            correctPredictions++
-        }
-    }
-    val accuracy = correctPredictions.toDouble() / dataSet.y_test.shape[0]
+    val y_pred = randomForest.predict(dataSet.X_test)
+    val accuracy = accuracy_score(dataSet.y_test, y_pred)
     println("Accuracy: $accuracy")
+}
+
+fun D2Array<Double>.selectRowD2Array(indices: MutableList<Int>): D2Array<Double> {
+    return mk.ndarray(indices.map { this[it, 0..<this.shape[1]].toList() }.toList())
+}
+
+fun D1Array<Int>.selectRowD1Array(indices: MutableList<Int>): D1Array<Int> {
+    return mk.ndarray(indices.map { this[it] }.toList())
 }

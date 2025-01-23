@@ -29,12 +29,17 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0")
+                implementation("org.jetbrains.kotlinx:multik-core:0.2.3")
+                implementation("org.jetbrains.kotlinx:multik-kotlin:0.2.3")
+
+//                implementation("org.jetbrains.kotlinx:multik-default:0.2.3")
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.test)
-                // Add additional test dependencies here
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.0")
             }
         }
     }

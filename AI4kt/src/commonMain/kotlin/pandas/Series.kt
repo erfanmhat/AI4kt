@@ -1,21 +1,16 @@
 package io.ai4kt.ai4kt.fibonacci.pandas
 
-import io.ai4kt.ai4kt.fibonacci.numpy.np
-import kotlin.math.pow
-import kotlin.math.sqrt
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import kotlin.reflect.KClass
 
-class Series(private val data: List<Any?>, private val index: List<Any>? = null) : Iterable<Any?> {
-
-    val values
-        get() = np.array(data)
-
+class Series<T>(private val data: List<T?>, private val index: List<Any>? = null) : Iterable<T?> {
     init {
         if (index != null && index.size != data.size) {
             throw IllegalArgumentException("Index length must match data length.")
         }
     }
-
-    private val lazyData by lazy { data }
 
     val shape: List<Int>
         get() = listOf(data.size)
@@ -31,23 +26,15 @@ class Series(private val data: List<Any?>, private val index: List<Any>? = null)
         return data[position]
     }
 
-    fun slice(start: Int, end: Int): Series {
-        return Series(data.subList(start, end), index?.subList(start, end))
+    fun <T : Any> getValues(clazz: KClass<T>): D1Array<T> {
+        return when (clazz) {
+            Double::class -> mk.ndarray(data as List<Double>) as D1Array<T>
+            Int::class -> mk.ndarray(data as List<Int>) as D1Array<T>
+            else -> throw IllegalArgumentException("Unsupported type: ${clazz::class}")
+        }
     }
 
-    /**
-     * Returns a subset of the Series based on the given indices.
-     *
-     * @param indices The indices of the elements to include in the subset.
-     * @return A new Series containing the specified elements.
-     */
-    fun slice(indices: List<Int>): Series {
-        val slicedData = indices.map { this.data[it] }
-        val slicedIndex = this.index?.let { idx -> indices.map { idx[it] } }
-        return Series(slicedData, slicedIndex)
-    }
-
-    fun filter(condition: (Any?) -> Boolean): Series {
+    fun filter(condition: (Any?) -> Boolean): Series<T> {
         val filteredData = data.filter(condition)
         val filteredIndex = index?.let { idx ->
             data.indices.filter { condition(data[it]) }.map { idx[it] }
@@ -55,7 +42,7 @@ class Series(private val data: List<Any?>, private val index: List<Any>? = null)
         return Series(filteredData, filteredIndex)
     }
 
-    operator fun plus(other: Series): Series {
+    operator fun <T> plus(other: Series<T>): Series<Double> {
         if (this.data.size != other.data.size) throw IllegalArgumentException("Series lengths must match.")
         val result = this.data.mapIndexed { i, a ->
             when (a) {
@@ -71,55 +58,64 @@ class Series(private val data: List<Any?>, private val index: List<Any>? = null)
     }
 
     fun sum(): Double {
-        return lazyData.filterIsInstance<Number>().sumOf { it.toDouble() }
+        return data.filterNotNull() // Filter out null values
+            .filterIsInstance<Number>() // Filter only numeric types
+            .sumOf { it.toDouble() } // Sum all numeric values as Double
     }
 
     fun mean(): Double {
-        return sum() / data.size
+        if (data.isEmpty()) throw NoSuchElementException("List is empty")
+        return sum() / data.filterNotNull().filterIsInstance<Number>().size
     }
 
-    fun min(): Any? {
-        return lazyData.filterNotNull().filterIsInstance<Comparable<Any>>().minOrNull()
+    fun min(): Double {
+        if (data.isEmpty()) throw NoSuchElementException("List is empty")
+        return data.filterNotNull() // Filter out null values
+            .filterIsInstance<Number>() // Filter only numeric types
+            .minOf { it.toDouble() } // Find the minimum value
     }
 
-    fun max(): Any? {
-        return lazyData.filterNotNull().filterIsInstance<Comparable<Any>>().maxOrNull()
+    fun max(): Double {
+        if (data.isEmpty()) throw NoSuchElementException("List is empty")
+        return data.filterNotNull() // Filter out null values
+            .filterIsInstance<Number>() // Filter only numeric types
+            .maxOf { it.toDouble() } // Find the maximum value
     }
 
-    fun std(): Double {
-        val mean = mean()
-        val variance = lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
-        return sqrt(variance)
-    }
+//    fun std(): Double {
+//        val mean = mean()
+//        val variance = lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
+//        return sqrt(variance)
+//    }
+//
+//    fun get_var(): Double {
+//        val mean = mean()
+//        return lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
+//    }
 
-    fun get_var(): Double {
-        val mean = mean()
-        return lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
-    }
+//    fun dropna(): Series<T> {
+//        val nonNullData = values.map { it != null }
+//        val nonNullIndex = index?.let { idx ->
+//            values.indices.filter { values[it] != null }.map { idx[it] }
+//        }
+//        return Series(nonNullData, nonNullIndex)
+//    }
 
-    fun dropna(): Series {
-        val nonNullData = data.filterNotNull()
-        val nonNullIndex = index?.let { idx ->
-            data.indices.filter { data[it] != null }.map { idx[it] }
-        }
-        return Series(nonNullData, nonNullIndex)
-    }
-
-    fun fillna(value: Any?): Series {
+    fun fillna(value: T): Series<T> {
         val filledData = data.map { it ?: value }
         return Series(filledData, index)
     }
 
     fun toList(): List<Any?> {
-        return data
+        return data.toList()
     }
 
-    fun toMap(): Map<Any, Any?> {
-        if (index == null) throw UnsupportedOperationException("Index is not defined.")
-        return index.zip(data).toMap()
-    }
+//    fun toMap(): Map<Any, Any?> {
+//        if (index == null) throw UnsupportedOperationException("Index is not defined.")
+//        return index.zip(values).toMap()
+//    }
 
-    override fun iterator(): Iterator<Any?> {
+    override fun iterator(): Iterator<T?> {
         TODO("Not yet implemented")
     }
 
@@ -156,12 +152,4 @@ fun main() {
     val stringSeries = Series(stringData, stringIndex)
 
     println(stringSeries)
-    println("Max: ${stringSeries.max()}")
-    println("Min: ${stringSeries.min()}")
-
-    val filteredStringSeries = stringSeries.filter { it != null && (it as String) > "2" }
-    println(filteredStringSeries)
-
-    val filledStringSeries = stringSeries.fillna("0")
-    println(filledStringSeries)
 }
