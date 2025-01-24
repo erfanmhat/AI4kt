@@ -15,6 +15,11 @@ class ReLU : Activation {
     }
 
     override fun backward(dvalues: D2Array<Double>, inputs: D2Array<Double>): D2Array<Double> {
+        require(dvalues.shape.contentEquals(inputs.shape)) {
+            "dvalues and inputs must have same shape: " +
+                    "dvalues.shape=${dvalues.shape.contentToString()}, " +
+                    "inputs.shape=${inputs.shape.contentToString()}"
+        }
         return dvalues * inputs.map { if (it > 0) 1.0 else 0.0 }
     }
 }

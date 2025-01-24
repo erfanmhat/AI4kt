@@ -28,6 +28,12 @@ class Softmax : Activation {
     }
 
     override fun backward(dvalues: D2Array<Double>, inputs: D2Array<Double>): D2Array<Double> {
+        require(dvalues.shape.contentEquals(inputs.shape)) {
+            "dvalues and inputs must have same shape: " +
+                    "dvalues.shape=${dvalues.shape.contentToString()}, " +
+                    "inputs.shape=${inputs.shape.contentToString()}"
+        }
+
         val dinputs = mk.zeros<Double>(inputs.shape[0], inputs.shape[1])
 
         for (i in 0 until inputs.shape[0]) {
@@ -39,21 +45,21 @@ class Softmax : Activation {
                 diagOutput[j, j] = singleOutput[j]
             }
 
-            // Create the Jacobian matrix: diag(singleOutput) - singleOutput^T * singleOutput
-            val jacobianMatrix = diagOutput - singleOutput.transpose().broadcast(
-                diagOutput.shape[0]
-            ) dot singleOutput.broadcast(diagOutput.shape[1])
+            // Compute the outer product: s^T * s
+            val outerProduct = singleOutput.reshape(singleOutput.size, 1) dot singleOutput.reshape(1, singleOutput.size)
+
+            // Create the Jacobian matrix: diag(s) - s^T * s
+            val jacobianMatrix = diagOutput - outerProduct
 
             // Reshape dvalues[i] to a 2D row vector and compute gradients
             val dvaluesRow = dvalues[i].reshape(1, dvalues[i].size)
             val grad = mk.linalg.dot(dvaluesRow, jacobianMatrix)
 
-            // Ensure the shape of grad[0] matches dinputs[i]
-            if (grad[0].size == dinputs[i].size) {
+            // Ensure the shape of grad matches dinputs[i]
+            if (grad.shape[1] == dinputs[i].size) {
                 dinputs[i] = grad[0] // Extract the result (1D array)
             } else {
-                // Handle the shape mismatch, e.g., by reshaping or logging an error
-                throw IllegalArgumentException("Shape mismatch: grad[0] has size ${grad[0].size}, but dinputs[i] expects size ${dinputs[i].size}")
+                throw IllegalArgumentException("Shape mismatch: grad[0] has size ${grad.shape[1]}, but dinputs[i] expects size ${dinputs[i].size}")
             }
         }
 

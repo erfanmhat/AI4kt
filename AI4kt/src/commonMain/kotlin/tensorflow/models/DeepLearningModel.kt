@@ -12,9 +12,9 @@ import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 
 class DeepLearningModel {
-    private val layers = mutableListOf<Any>()
-    private lateinit var optimizer: GradientDescentOptimizer
-    private lateinit var lossFunction: LossCategoricalCrossentropy
+    val layers = mutableListOf<Any>()
+    lateinit var optimizer: GradientDescentOptimizer
+    lateinit var lossFunction: LossCategoricalCrossentropy
 
     // Builder methods
     fun addInputLayer(nInputs: Int): DeepLearningModel {
@@ -53,9 +53,7 @@ class DeepLearningModel {
             output = when (layer) {
                 is InputLayer -> layer.forward(output)
                 is DNNLayer -> layer.forward(output)
-                is ReLU -> layer.forward(output)
-                is Softmax -> layer.forward(output)
-                else -> throw IllegalArgumentException("Invalid layer type")
+                else -> throw IllegalArgumentException("Invalid layer type: ${layer::class.simpleName}")
             }
         }
         return output
@@ -68,6 +66,7 @@ class DeepLearningModel {
         // Iterate through layers in reverse order
         for (layer in layers.reversed()) {
             grad = when (layer) {
+                is InputLayer -> grad
                 is DNNLayer -> layer.backward(grad) // Update gradients for DNNLayer
                 else -> throw IllegalArgumentException("Unsupported layer type: ${layer::class.simpleName}")
             }
@@ -100,8 +99,8 @@ fun main() {
     // Create a model using the builder pattern
     val model = DeepLearningModel()
         .addInputLayer(3) // Input layer with 3 features
-        .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
-        .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
+        .addDenseLayer(30, ReLU()) // Hidden layer with 5 neurons and ReLU activation
+        .addDenseLayer(3, Softmax()) // Output layer with 2 neurons and Softmax activation
         .setOptimizer(0.01) // Set optimizer with learning rate 0.01
         .setLossFunction() // Set loss function
         .build()
@@ -110,18 +109,22 @@ fun main() {
     val inputs: D2Array<Double> = mk.ndarray(
         listOf(
             listOf(1.0, 2.0, 3.0),
-            listOf(4.0, 5.0, 6.0)
+            listOf(4.0, 5.0, 6.0),
+            listOf(7.0, 8.0, 9.0)
         )
     )
 
     // Example target data (2 samples, one-hot encoded)
     val yTrue: D2Array<Double> = mk.ndarray(
         listOf(
-            listOf(1.0, 0.0),
-            listOf(0.0, 1.0)
+            listOf(1.0, 0.0, 0.0),
+            listOf(0.0, 1.0, 0.0),
+            listOf(0.0, 0.0, 1.0)
         )
     )
 
     // Train the model for one step
-    model.trainStep(inputs, yTrue)
+    for (i in 0..1000){
+        model.trainStep(inputs, yTrue)
+    }
 }

@@ -5,6 +5,8 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.plusD1Array
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.ndarray.data.*
+import org.jetbrains.kotlinx.multik.ndarray.operations.map
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation? = null) {
@@ -19,8 +21,12 @@ class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation
     private lateinit var inputs: D2Array<Double>
 
     init {
-        weights = mk.ndarray(List(n_inputs) { List(n_neurons) { Random.nextDouble(-0.1, 0.1) } })
-        biases = mk.zeros<Double>(n_neurons)
+        // Xavier/Glorot initialization for weights
+        val scale = sqrt(2.0 / (n_inputs + n_neurons))
+        weights = mk.ndarray(List(n_inputs) { List(n_neurons) { Random.nextDouble(-scale, scale) } })
+
+        // Initialize biases to a small positive value
+        biases = mk.zeros<Double>(n_neurons).map { 0.01 }
     }
 
     fun forward(inputs: D2Array<Double>): D2Array<Double> {
@@ -29,14 +35,22 @@ class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation
 
         // Linear transformation
         val output = mk.linalg.dot(inputs, weights).plusD1Array(biases)
+//        val output = mk.linalg.dot(inputs, weights) + biases.broadcast(biases.size)todo
+
 
         // Apply activation function if provided
         return activation?.forward(output) ?: output
     }
 
     fun backward(dvalues: D2Array<Double>): D2Array<Double> {
-        // Gradients for activation function
-        val dactivation = activation?.backward(dvalues, inputs) ?: dvalues
+        // Gradients for activation function (if any)
+        val dactivation = if (activation != null) {
+            // Pass the output of the layer (before activation) to the activation's backward method
+            val output = mk.linalg.dot(inputs, weights).plusD1Array(biases)
+            activation.backward(dvalues, output)
+        } else {
+            dvalues
+        }
 
         // Gradients for weights
         dweights = mk.linalg.dot(inputs.transpose(), dactivation)
