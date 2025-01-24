@@ -1,45 +1,59 @@
 package io.ai4kt.ai4kt.fibonacci.tensorflow.loss
 
 import io.ai4kt.ai4kt.fibonacci.tensorflow.OneHotEncoding
-import io.ai4kt.ai4kt.fibonacci.tensorflow.mapIndexedD2ToD1Array
+import io.ai4kt.ai4kt.fibonacci.tensorflow.map2DRowsTo1DArray
+import io.ai4kt.ai4kt.fibonacci.tensorflow.map2DRowsTo2DArray
 import io.ai4kt.ai4kt.fibonacci.tensorflow.times
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.indexOfFirst
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
-import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-import kotlin.math.log
+import org.jetbrains.kotlinx.multik.ndarray.operations.mapIndexed
+import org.jetbrains.kotlinx.multik.ndarray.operations.sum
 import kotlin.math.E
+import kotlin.math.log
+import kotlin.math.max
+import kotlin.math.min
 
-// Categorical Cross-Entropy Loss
-class LossCategoricalCrossentropy : Loss() {
-    override fun forward(yPred: D2Array<Double>, yTrue: D2Array<Double>): D1Array<Double> {
-        val samples = yPred.shape[0]
+class LossCategoricalCrossentropy {
+    fun calculate(output: D2Array<Double>, yTrue: D2Array<Double>): Double {
+        val samples = output.shape[0]
+        val clippedOutput = output.map { value ->
+            max(min(value, 1 - 1e-7), 1e-7)
+        }
+        val confidences = clippedOutput.map2DRowsTo1DArray { i, row ->
+            row[yTrue[i].indexOfFirst { it == 1.0 }]
+        }
+        val losses = confidences.map { -log(it, E) }
+        return losses.sum() / samples
+    }
 
-        // Clip predictions to prevent log(0)
-        val yPredClipped = yPred.map { it.coerceIn(1e-7, 1.0 - 1e-7) }
+    fun backward(output: D2Array<Double>, yTrue: D2Array<Double>): D2Array<Double> {
+        val samples = output.shape[0]
+        val nRows = output.shape[0]
+        val nCols = output.shape[1]
 
-        // Handle two cases for yTrue: 1D (class indices) or 2D (one-hot encoded)
-        val correctConfidences = if (yTrue.shape.size == 1) {
-            // Case 1: yTrue is 1D (class indices)
-            val indices = yTrue.toList().map { it.toInt() }
-            yPredClipped.mapIndexedD2ToD1Array { i, row -> row[indices[i]] }
-        } else {
-            // Case 2: yTrue is 2D (one-hot encoded)
-            // Ensure yTrue has the same shape as yPredClipped
-            require(yTrue.shape.contentEquals(yPredClipped.shape)) {
-                "yTrue must have the same shape as yPredClipped for one-hot encoded labels " +
-                        "yTrue.shape= ${yTrue.shape.contentToString()}, " +
-                        "yPredClipped.shape= ${yPredClipped.shape.contentToString()}"
+        // Create a result array to store the gradients
+        val gradients = mk.zeros<Double>(nRows, nCols)
+
+        // Iterate over each row
+        for (i in 0 until nRows) {
+            // Iterate over each column
+            for (j in 0 until nCols) {
+                // Compute the gradient for this element
+                gradients[i, j] = if (yTrue[i, j] == 1.0) {
+                    -1.0 / (output[i, j] * samples)
+                } else {
+                    0.0
+                }
             }
-            // Sum the element-wise product along axis 1
-            mk.math.sum(yPredClipped * yTrue, axis = 1)
         }
 
-        // Compute negative log likelihood
-        return correctConfidences.map { -log(it, E) }
+        return gradients
     }
 }
 

@@ -23,7 +23,7 @@ class OneHotEncoding {
 
     fun inverseTransform(oneHot: D2Array<Double>): D1Array<Int> {
         // Convert one-hot encoded matrix back to labels
-        return oneHot.mapD2ToD1Array { row -> row.indexOf(1.0) }
+        return oneHot.map2DRowsToIntArray { row -> row.indexOf(1.0) }
     }
 }
 

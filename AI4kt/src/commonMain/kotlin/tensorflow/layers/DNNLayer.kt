@@ -1,14 +1,22 @@
 package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
 
+import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Activation
 import io.ai4kt.ai4kt.fibonacci.tensorflow.plusD1Array
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import kotlin.random.Random
 
-class DNNLayer(n_inputs: Int, n_neurons: Int) {
+class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation? = null) {
     var weights: D2Array<Double>
     var biases: D1Array<Double>
+
+    // Gradients for weights and biases
+    var dweights: D2Array<Double> = mk.zeros<Double>(n_inputs, n_neurons)
+    var dbiases: D1Array<Double> = mk.zeros<Double>(n_neurons)
+
+    // Cache for inputs during forward pass (used in backward pass)
+    private lateinit var inputs: D2Array<Double>
 
     init {
         weights = mk.ndarray(List(n_inputs) { List(n_neurons) { Random.nextDouble(-0.1, 0.1) } })
@@ -16,11 +24,32 @@ class DNNLayer(n_inputs: Int, n_neurons: Int) {
     }
 
     fun forward(inputs: D2Array<Double>): D2Array<Double> {
-        return mk.linalg.dot(inputs, weights).plusD1Array(biases)
+        // Cache the inputs for use in the backward pass
+        this.inputs = inputs
 
+        // Linear transformation
+        val output = mk.linalg.dot(inputs, weights).plusD1Array(biases)
+
+        // Apply activation function if provided
+        return activation?.forward(output) ?: output
+    }
+
+    fun backward(dvalues: D2Array<Double>): D2Array<Double> {
+        // Gradients for activation function
+        val dactivation = activation?.backward(dvalues, inputs) ?: dvalues
+
+        // Gradients for weights
+        dweights = mk.linalg.dot(inputs.transpose(), dactivation)
+
+        // Gradients for biases (sum over the batch axis)
+        dbiases = mk.math.sum(dactivation, axis = 0)
+
+        // Gradients for inputs
+        val dinputs = mk.linalg.dot(dactivation, weights.transpose())
+
+        return dinputs
     }
 }
-
 
 fun main() {
     val X = mk.ndarray(
