@@ -9,7 +9,9 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossCategoricalCrossentropy
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
 
 class DeepLearningModel {
     val layers = mutableListOf<Any>()
@@ -93,6 +95,32 @@ class DeepLearningModel {
             }
         }
     }
+
+    // Fit function
+    fun fit(
+        X: D2Array<Double>,
+        y: D2Array<Double>,
+        epochs: Int,
+        batchSize: Int
+    ) {
+        val nSamples = X.shape[0]
+        for (epoch in 1..epochs) {
+            println("Epoch $epoch/$epochs")
+            for (startIdx in 0 until nSamples step batchSize) {
+                val endIdx = minOf(startIdx + batchSize, nSamples)
+                val XBatch = X[startIdx until endIdx] as D2Array<Double>
+                val yBatch = y[startIdx until endIdx] as D2Array<Double>
+
+                // Perform a training step on the batch
+                trainStep(XBatch, yBatch)
+            }
+        }
+    }
+
+    // Predict function
+    fun predict(X: D2Array<Double>): D2Array<Double> {
+        return forward(X)
+    }
 }
 
 fun main() {
@@ -124,7 +152,7 @@ fun main() {
     )
 
     // Train the model for one step
-    for (i in 0..1000){
+    for (i in 0..1000) {
         model.trainStep(inputs, yTrue)
     }
 }
