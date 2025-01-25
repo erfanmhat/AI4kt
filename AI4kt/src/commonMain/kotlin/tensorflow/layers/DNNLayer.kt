@@ -9,7 +9,12 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation? = null) {
+class DNNLayer(
+    n_inputs: Int,
+    n_neurons: Int,
+    private val random: Random,
+    private val activation: Activation? = null
+) : Layer {
     var weights: D2Array<Double>
     var biases: D1Array<Double>
 
@@ -23,13 +28,13 @@ class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation
     init {
         // Xavier/Glorot initialization for weights
         val scale = sqrt(2.0 / (n_inputs + n_neurons))
-        weights = mk.ndarray(List(n_inputs) { List(n_neurons) { Random.nextDouble(-scale, scale) } })
+        weights = mk.ndarray(List(n_inputs) { List(n_neurons) { random.nextDouble(-scale, scale) } })
 
         // Initialize biases to a small positive value
         biases = mk.zeros<Double>(n_neurons).map { 0.01 }
     }
 
-    fun forward(inputs: D2Array<Double>): D2Array<Double> {
+    override fun forward(inputs: D2Array<Double>): D2Array<Double> {
         // Cache the inputs for use in the backward pass
         this.inputs = inputs
 
@@ -42,7 +47,7 @@ class DNNLayer(n_inputs: Int, n_neurons: Int, private val activation: Activation
         return activation?.forward(output) ?: output
     }
 
-    fun backward(dvalues: D2Array<Double>): D2Array<Double> {
+    override fun backward(dvalues: D2Array<Double>): D2Array<Double> {
         // Gradients for activation function (if any)
         val dactivation = if (activation != null) {
             // Pass the output of the layer (before activation) to the activation's backward method
@@ -73,8 +78,9 @@ fun main() {
             mk[-1.5, 2.7, 3.3, -0.8]
         ]
     )
-    val l1 = DNNLayer(4, 5)
-    val l2 = DNNLayer(5, 2)
+    val random = Random(42)
+    val l1 = DNNLayer(4, 5, random)
+    val l2 = DNNLayer(5, 2, random)
     val l1_out = l1.forward(X)
     val l2_out = l2.forward(l1_out)
     println(l1_out)

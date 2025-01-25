@@ -5,18 +5,27 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.DNNLayer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.InputLayer
+import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.Layer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossCategoricalCrossentropy
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
+import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.Optimizer
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
+import kotlin.random.Random
 
-class DeepLearningModel {
-    val layers = mutableListOf<Any>()
-    lateinit var optimizer: GradientDescentOptimizer
+class DeepLearningModel(
+    var random: Random
+) {
+    val layers = mutableListOf<Layer>()
+    lateinit var optimizer: Optimizer
     lateinit var lossFunction: LossCategoricalCrossentropy
+
+    fun setRandom(random: Random): DeepLearningModel {
+        this.random = random
+        return this
+    }
 
     // Builder methods
     fun addInputLayer(nInputs: Int): DeepLearningModel {
@@ -30,12 +39,12 @@ class DeepLearningModel {
             is DNNLayer -> lastLayer.weights.shape[1]
             else -> throw IllegalArgumentException("Invalid layer type")
         }
-        layers.add(DNNLayer(nInputs, nNeurons, activation))
+        layers.add(DNNLayer(nInputs, nNeurons, random, activation))
         return this
     }
 
-    fun setOptimizer(learningRate: Double): DeepLearningModel {
-        optimizer = GradientDescentOptimizer(learningRate)
+    fun setOptimizer(optimizer: Optimizer): DeepLearningModel {
+        this.optimizer = optimizer
         return this
     }
 
@@ -82,8 +91,11 @@ class DeepLearningModel {
 
         // Compute loss
         val loss = lossFunction.calculate(output, yTrue)
-        println("Loss: $loss")
-
+        print("\r")
+        print("Loss: $loss")
+//        runBlocking {
+//            delay(50)
+//        }
         // Backward pass
         val dvalues = lossFunction.backward(output, yTrue)
         backward(dvalues)
@@ -105,6 +117,7 @@ class DeepLearningModel {
     ) {
         val nSamples = X.shape[0]
         for (epoch in 1..epochs) {
+            println()
             println("Epoch $epoch/$epochs")
             for (startIdx in 0 until nSamples step batchSize) {
                 val endIdx = minOf(startIdx + batchSize, nSamples)
@@ -115,6 +128,7 @@ class DeepLearningModel {
                 trainStep(XBatch, yBatch)
             }
         }
+        println()
     }
 
     // Predict function
@@ -124,12 +138,13 @@ class DeepLearningModel {
 }
 
 fun main() {
+    val random = Random(42)
     // Create a model using the builder pattern
-    val model = DeepLearningModel()
+    val model = DeepLearningModel(random)
         .addInputLayer(3) // Input layer with 3 features
         .addDenseLayer(30, ReLU()) // Hidden layer with 5 neurons and ReLU activation
         .addDenseLayer(3, Softmax()) // Output layer with 2 neurons and Softmax activation
-        .setOptimizer(0.01) // Set optimizer with learning rate 0.01
+        .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
         .setLossFunction() // Set loss function
         .build()
 
@@ -151,8 +166,6 @@ fun main() {
         )
     )
 
-    // Train the model for one step
-    for (i in 0..1000) {
-        model.trainStep(inputs, yTrue)
-    }
+
+    model.fit(inputs, yTrue, epochs = 100, batchSize = 1)
 }

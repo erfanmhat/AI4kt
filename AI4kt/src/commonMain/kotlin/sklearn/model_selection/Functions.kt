@@ -74,8 +74,9 @@ fun train_test_split(
     require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
     require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape.contentToString()}, y:${y.shape.contentToString()}." }
 
+    var random: Random? = null
     if (random_state != null) {
-        Random(random_state)
+        random = Random(random_state)
     }
 
     val n_samples = X.shape[0]
@@ -85,7 +86,8 @@ fun train_test_split(
         if (stratify != null) {
             stratified_shuffle_split(y, stratify, n_train, n_test)
         } else {
-            (0 until n_samples).shuffled()
+            if (random != null) (0 until n_samples).shuffled(random)
+            else (0 until n_samples).shuffled()
         }
     } else {
         if (stratify != null) {

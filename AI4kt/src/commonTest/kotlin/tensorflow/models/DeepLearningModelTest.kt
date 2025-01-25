@@ -2,23 +2,27 @@ package io.ai4kt.ai4kt.fibonacci.tensorflow.models
 
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
+import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class DeepLearningModelTest {
+
+    private val random = Random(42)
 
     private val mk = Multik
 
     @Test
     fun testForwardPass() {
         // Create a model
-        val model = DeepLearningModel()
+        val model = DeepLearningModel(random)
             .addInputLayer(3) // Input layer with 3 features
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
-            .setOptimizer(0.01) // Set optimizer with learning rate 0.01
+            .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction() // Set loss function
             .build()
 
@@ -40,11 +44,11 @@ class DeepLearningModelTest {
     @Test
     fun testBackwardPass() {
         // Create a model
-        val model = DeepLearningModel()
+        val model = DeepLearningModel(random)
             .addInputLayer(3) // Input layer with 3 features
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
-            .setOptimizer(0.01) // Set optimizer with learning rate 0.01
+            .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction() // Set loss function
             .build()
 
@@ -79,11 +83,11 @@ class DeepLearningModelTest {
     @Test
     fun testTrainStep() {
         // Create a model
-        val model = DeepLearningModel()
+        val model = DeepLearningModel(random)
             .addInputLayer(3) // Input layer with 3 features
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
-            .setOptimizer(0.01) // Set optimizer with learning rate 0.01
+            .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction() // Set loss function
             .build()
 
