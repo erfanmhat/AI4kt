@@ -37,7 +37,7 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
     }
 
     operator fun set(key: String, value: Series<Any?>) {
-        if (value.shape[0] != shape[1]) throw IllegalArgumentException("Series size must match row count.")
+        if (value.shape[0] != shape[0]) throw IllegalArgumentException("Series size must match row count.")
         data[key] = value
     }
 

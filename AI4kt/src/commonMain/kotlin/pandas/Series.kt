@@ -3,6 +3,8 @@ package io.ai4kt.ai4kt.fibonacci.pandas
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.reflect.KClass
 
 class Series<T>(private val data: List<T?>, private val index: List<Any>? = null) : Iterable<T?> {
@@ -82,24 +84,30 @@ class Series<T>(private val data: List<T?>, private val index: List<Any>? = null
             .maxOf { it.toDouble() } // Find the maximum value
     }
 
-//    fun std(): Double {
-//        val mean = mean()
-//        val variance = lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
-//        return sqrt(variance)
-//    }
-//
-//    fun get_var(): Double {
-//        val mean = mean()
-//        return lazyData.filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
-//    }
+    fun std(): Double {
+        val mean = mean()
+        val variance = data.filterNotNull()
+            .filterIsInstance<Number>()
+            .map { (it.toDouble() - mean).pow(2) }
+            .average()
+        return sqrt(variance)
+    }
 
-//    fun dropna(): Series<T> {
-//        val nonNullData = values.map { it != null }
-//        val nonNullIndex = index?.let { idx ->
-//            values.indices.filter { values[it] != null }.map { idx[it] }
-//        }
-//        return Series(nonNullData, nonNullIndex)
-//    }
+    fun get_var(): Double {
+        val mean = mean()
+        return data.filterNotNull()
+            .filterIsInstance<Number>()
+            .map { (it.toDouble() - mean).pow(2) }
+            .average()
+    }
+
+    fun dropna(): Series<T> {
+        val nonNullData = data.filterNotNull()
+        val nonNullIndex = index?.let { idx ->
+            data.indices.filter { data[it] != null }.map { idx[it] }
+        }
+        return Series(nonNullData, nonNullIndex)
+    }
 
     fun fillna(value: T): Series<T> {
         val filledData = data.map { it ?: value }
@@ -110,13 +118,13 @@ class Series<T>(private val data: List<T?>, private val index: List<Any>? = null
         return data.toList()
     }
 
-//    fun toMap(): Map<Any, Any?> {
-//        if (index == null) throw UnsupportedOperationException("Index is not defined.")
-//        return index.zip(values).toMap()
-//    }
+    fun toMap(): Map<Any, Any?> {
+        if (index == null) throw UnsupportedOperationException("Index is not defined.")
+        return index.zip(data).toMap()
+    }
 
     override fun iterator(): Iterator<T?> {
-        TODO("Not yet implemented")
+        return data.iterator()
     }
 
     override fun toString(): String {
