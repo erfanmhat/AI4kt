@@ -4,17 +4,19 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.all
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class DNNLayerTest {
 
     private val mk = Multik
+    private val random = Random(42)
 
     @Test
     fun testForwardPassWithoutActivation() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and no activation function
-        val layer = DNNLayer(3, 5)
+        val layer = DNNLayer(3, 5, random)
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -34,7 +36,7 @@ class DNNLayerTest {
     @Test
     fun testForwardPassWithReLU() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and ReLU activation
-        val layer = DNNLayer(3, 5, ReLU())
+        val layer = DNNLayer(3, 5, random, ReLU())
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -57,7 +59,7 @@ class DNNLayerTest {
     @Test
     fun testBackwardPassWithoutActivation() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and no activation function
-        val layer = DNNLayer(3, 5)
+        val layer = DNNLayer(3, 5, random)
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -88,7 +90,7 @@ class DNNLayerTest {
     @Test
     fun testBackwardPassWithReLU() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and ReLU activation
-        val layer = DNNLayer(3, 5, ReLU())
+        val layer = DNNLayer(3, 5, random, ReLU())
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(

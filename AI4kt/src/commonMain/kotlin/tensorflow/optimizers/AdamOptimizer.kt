@@ -1,63 +1,76 @@
 package io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers
 
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.DNNLayer
-import org.jetbrains.kotlinx.multik.api.*
-import org.jetbrains.kotlinx.multik.ndarray.data.*
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.zeros
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 class AdamOptimizer(
-    val learningRate: Double = 0.001,
-    val beta1: Double = 0.9,
-    val beta2: Double = 0.999,
-    val epsilon: Double = 1e-8
+    private val learningRate: Double = 0.001,
+    private val beta1: Double = 0.9,
+    private val beta2: Double = 0.999,
+    private val epsilon: Double = 1e-7
 ) : Optimizer {
 
-    // First moment estimates (mean of gradients)
-    private var mWeights: D2Array<Double>? = null
-    private var mBiases: D1Array<Double>? = null
+    override fun copy(): AdamOptimizer {
+        return AdamOptimizer(
+            learningRate = learningRate,
+            beta1 = beta1,
+            beta2 = beta2,
+            epsilon = epsilon
+        )
+    }
 
-    // Second moment estimates (uncentered variance of gradients)
-    private var vWeights: D2Array<Double>? = null
-    private var vBiases: D1Array<Double>? = null
-
-    // Time step (for bias correction)
-    private var t: Int = 0
+    private lateinit var m_weights: D2Array<Double>  // First moment estimates for weights
+    private lateinit var v_weights: D2Array<Double>  // Second moment estimates for weights
+    private lateinit var m_biases: D1Array<Double>   // First moment estimates for biases
+    private lateinit var v_biases: D1Array<Double>   // Second moment estimates for biases
+    private var t: Int = 0  // Timestep
 
     override fun update(layer: DNNLayer) {
-        // Initialize moment estimates if they are null
-        if (mWeights == null || vWeights == null) {
-            // Initialize with the same shape as layer.weights
-            mWeights = mk.zeros(layer.weights.shape[0], layer.weights.shape[1])
-            vWeights = mk.zeros(layer.weights.shape[0], layer.weights.shape[1])
-        }
-        if (mBiases == null || vBiases == null) {
-            // Initialize with the same shape as layer.biases
-            mBiases = mk.zeros(layer.biases.size)
-            vBiases = mk.zeros(layer.biases.size)
+        // Initialize moment estimates for weights and biases only once
+        if (!::m_weights.isInitialized) {
+            m_weights = mk.zeros(layer.weights.shape[0], layer.weights.shape[1])  // Initialize m for weights (D2Array)
+            v_weights = mk.zeros(layer.weights.shape[0], layer.weights.shape[1])  // Initialize v for weights (D2Array)
+            m_biases = mk.zeros(layer.biases.size)     // Initialize m for biases (D1Array)
+            v_biases = mk.zeros(layer.biases.size)     // Initialize v for biases (D1Array)
         }
 
-        // Increment time step
-        t += 1
+        t += 1  // Increment timestep
 
-        // Update first moment estimates (mean)
-        mWeights = beta1 * mWeights!! + (1.0 - beta1) * layer.dweights
-        mBiases = beta1 * mBiases!! + (1.0 - beta1) * layer.dbiases
+        // Gradients for the weights and biases
+        val gradW = layer.dweights  // dweights is a D2Array
+        val gradB = layer.dbiases   // dbiases is a D1Array
 
-        // Update second moment estimates (variance)
-        vWeights = beta2 * vWeights!! + (1.0 - beta2) * (layer.dweights * layer.dweights)
-        vBiases = beta2 * vBiases!! + (1.0 - beta2) * (layer.dbiases * layer.dbiases)
+        // Update m and v for weights (D2Array)
+        m_weights = beta1 * m_weights + (1 - beta1) * gradW
+        v_weights = beta2 * v_weights + (1 - beta2) * gradW * gradW
 
-        // Bias-corrected first moment estimates
-        val mWeightsHat = mWeights!! / (1.0 - beta1.pow(t))
-        val mBiasesHat = mBiases!! / (1.0 - beta1.pow(t))
+        // Compute bias-corrected estimates for weights
+        val m_hat_weights = m_weights / (1 - beta1.pow(t))
+        val v_hat_weights = v_weights / (1 - beta2.pow(t))
 
-        // Bias-corrected second moment estimates
-        val vWeightsHat = vWeights!! / (1.0 - beta2.pow(t))
-        val vBiasesHat = vBiases!! / (1.0 - beta2.pow(t))
+        // Update the weights element-wise (row-wise or column-wise)
+        for (i in 0 until layer.weights.shape[0]) {
+            layer.weights[i] =
+                layer.weights[i] - learningRate * (m_hat_weights[i] / (v_hat_weights[i].map { sqrt(it) } + epsilon))
+        }
 
-        // Update weights and biases
-        layer.weights = layer.weights - learningRate * mWeightsHat / (vWeightsHat.map { it.pow(0.5) } + epsilon)
-        layer.biases = layer.biases - learningRate * mBiasesHat / (vBiasesHat.map { it.pow(0.5) } + epsilon)
+        // Update m and v for biases (D1Array)
+        m_biases = beta1 * m_biases + (1 - beta1) * gradB
+        v_biases = beta2 * v_biases + (1 - beta2) * gradB.map { it * it }
+
+        // Compute bias-corrected estimates for biases
+        val m_hat_biases = m_biases / (1 - beta1.pow(t))
+        val v_hat_biases = v_biases / (1 - beta2.pow(t))
+
+        // Update biases
+        layer.biases = layer.biases - learningRate * (m_hat_biases / (v_hat_biases.map { sqrt(it) } + epsilon))
     }
 }

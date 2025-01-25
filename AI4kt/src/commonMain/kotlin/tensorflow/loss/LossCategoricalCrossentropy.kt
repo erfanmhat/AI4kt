@@ -4,22 +4,29 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.OneHotEncoding
 import io.ai4kt.ai4kt.fibonacci.tensorflow.times
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
 import kotlin.math.*
 
-class LossCategoricalCrossentropy {
-    fun calculate(output: D2Array<Double>, yTrue: D2Array<Double>): Double {
+class LossCategoricalCrossentropy : Loss {
+    // Compute the forward pass (per-sample loss)
+    override fun forward(output: D2Array<Double>, y: D2Array<Double>): D1Array<Double> {
         val epsilon = 1e-7
-        val clippedOutput = output.map { maxOf(it, epsilon) } // Clip to avoid log(0)
+        // Clip output to avoid log(0)
+        val clippedOutput = output.map { maxOf(it, epsilon) }
+        // Calculate negative log probabilities
         val logProbs = clippedOutput.map { -ln(it) }
-        val loss = mk.math.sum(logProbs * yTrue)
-        return loss
+        // Compute per-sample loss
+        return mk.math.sum(logProbs * y, axis = 1)
     }
 
-    fun backward(output: D2Array<Double>, yTrue: D2Array<Double>): D2Array<Double> {
+    // Calculate the gradient of the categorical cross-entropy loss
+    override fun backward(output: D2Array<Double>, yTrue: D2Array<Double>): D2Array<Double> {
         val epsilon = 1e-7
-        val clippedOutput = output.map { maxOf(it, epsilon) } // Clip to avoid division by zero
+        // Clip output to avoid division by zero
+        val clippedOutput = output.map { maxOf(it, epsilon) }
+        // Compute the gradient
         return (clippedOutput - yTrue) / output.shape[0].toDouble()
     }
 }
@@ -40,7 +47,7 @@ fun main() {
     val oneHotEncoder = OneHotEncoding()
 
     val loss1D = LossCategoricalCrossentropy()
-    val lossValue1D = loss1D.calculate(yPred, oneHotEncoder.transform(yTrue1D))
+    val lossValue1D = loss1D.forward(yPred, oneHotEncoder.transform(yTrue1D))
     println("Loss (1D yTrue): $lossValue1D")
 
     // Case 2: yTrue is 2D (one-hot encoded)
@@ -53,6 +60,6 @@ fun main() {
     )
 
     val loss2D = LossCategoricalCrossentropy()
-    val lossValue2D = loss2D.calculate(yPred, yTrue2D)
+    val lossValue2D = loss2D.forward(yPred, yTrue2D)
     println("Loss (2D yTrue): $lossValue2D")
 }

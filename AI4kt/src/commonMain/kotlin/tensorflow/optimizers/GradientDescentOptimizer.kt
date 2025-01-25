@@ -12,4 +12,8 @@ class GradientDescentOptimizer(val learningRate: Double) : Optimizer {
         // Update biases
         layer.biases -= layer.dbiases * learningRate
     }
+
+    override fun copy(): Optimizer {
+        return GradientDescentOptimizer(learningRate)
+    }
 }

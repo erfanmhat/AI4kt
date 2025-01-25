@@ -5,8 +5,8 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 
 
 data class DataSet(
-    val X_train: D2Array<Double>,
-    val X_test: D2Array<Double>,
-    val y_train: D1Array<Int>,
-    val y_test: D1Array<Int>
+    var X_train: D2Array<Double>,
+    var X_test: D2Array<Double>,
+    var y_train: D1Array<Int>,
+    var y_test: D1Array<Int>
 )

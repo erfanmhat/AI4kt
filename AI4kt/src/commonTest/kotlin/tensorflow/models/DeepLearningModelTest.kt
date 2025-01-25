@@ -2,6 +2,7 @@ package io.ai4kt.ai4kt.fibonacci.tensorflow.models
 
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
+import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossBinaryCrossentropy
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
@@ -23,7 +24,7 @@ class DeepLearningModelTest {
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
-            .setLossFunction() // Set loss function
+            .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()
 
         // Example input data (2 samples, 3 features each)
@@ -49,7 +50,7 @@ class DeepLearningModelTest {
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
-            .setLossFunction() // Set loss function
+            .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()
 
         // Example input data (2 samples, 3 features each)
@@ -72,7 +73,7 @@ class DeepLearningModelTest {
         val output = model.forward(inputs)
 
         // Perform backward pass
-        val dvalues = model.lossFunction.backward(output, yTrue)
+        val dvalues = model.loss.backward(output, yTrue)
         model.backward(dvalues)
 
         // Verify that the gradients were computed correctly
@@ -88,7 +89,7 @@ class DeepLearningModelTest {
             .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
-            .setLossFunction() // Set loss function
+            .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()
 
         // Example input data (2 samples, 3 features each)

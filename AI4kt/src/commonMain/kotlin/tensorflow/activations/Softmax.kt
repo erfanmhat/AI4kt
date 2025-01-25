@@ -13,14 +13,15 @@ class Softmax : Activation {
     override fun forward(inputs: D2Array<Double>): D2Array<Double> {
         // Stabilize by subtracting the max value in each row
         val maxValues: D1Array<Double> = mk.math.max(inputs, axis = 1) // Find max value in each row
-        val stabilizedInputs = inputs - maxValues.broadcast(inputs.shape[1]) // Subtract max value from each row
+        val stabilizedInputs =
+            inputs - maxValues.broadcast(inputs.shape[1], axis = 1) // Subtract max value from each row
 
         // Compute exp of stabilized inputs
         val expValues = stabilizedInputs.map { exp(it) }
 
         // Calculate probabilities
         val sumExpValues: D1Array<Double> = mk.math.sum(expValues, axis = 1) // Sum along axis 1
-        val broadcastedSumExpValues = sumExpValues.broadcast(expValues.shape[1]) // Shape [M, N]
+        val broadcastedSumExpValues = sumExpValues.broadcast(expValues.shape[1], axis = 1) // Shape [M, N]
         val probabilities = expValues / broadcastedSumExpValues // Element-wise division
 
         this.output = probabilities
