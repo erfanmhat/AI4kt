@@ -8,7 +8,7 @@ import kotlinx.io.readString
 
 fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
     val file = SystemFileSystem.source(Path(filePath)).buffered()
-    val lines = file.readString().split("\n")
+    val lines = file.readString().trim().split("\n")
     if (lines.isEmpty()) throw IllegalArgumentException("File is empty: $filePath")
 
     // Extract header (column names)
@@ -57,7 +57,6 @@ fun main() {
     val filteredDf = df.filter { (it["age"] as Int) > 25 }
     println("Filtered DataFrame (age > 25):")
     println(filteredDf)
-    //todo fix this bug
 
     val sortedDf = df.sortBy("salary", ascending = false)
     println("Sorted DataFrame (salary descending):")

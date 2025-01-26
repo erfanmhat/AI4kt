@@ -184,9 +184,9 @@ fun main() {
     println("Sorted DataFrame (salary descending):")
     println(sortedDf)
 
-//    val selectedDf = df[listOf("name", "salary")]
-//    println("Selected columns (name, salary):")
-//    println(selectedDf)
+    val selectedDf = df[listOf("name", "salary")]
+    println("Selected columns (name, salary):")
+    println(selectedDf)
 
     df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
