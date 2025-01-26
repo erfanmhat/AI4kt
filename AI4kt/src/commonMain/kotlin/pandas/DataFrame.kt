@@ -5,6 +5,7 @@ import io.ai4kt.ai4kt.fibonacci.pandas.Series
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.reflect.KClass
@@ -118,12 +119,45 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append("DataFrame:\n")
-        builder.append(columns.joinToString("\t") + "\n")
+
+        // Map to store the padding required for each column
+        val columnMaxPaddingMap = mutableMapOf<String, Int>()
+
+        // Calculate padding for each column header
         for (i in 0 until shape[1]) {
-            builder.append(data.values.map { it[i] }.joinToString("\t") + "\n")
+            builder.append(columns[i])
+            columnMaxPaddingMap[columns[i]] = max(
+                calculate_max_len_of_column(data[columns[i]]?.data ?: listOf()),
+                columns[i].length
+            ) + 1
+
+            builder.append(" ".repeat(columnMaxPaddingMap[columns[i]]!! - columns[i].length))
         }
+        builder.append("\n")
+
+        // Append rows with proper padding
+        for (i in 0 until shape[0]) {
+            for (j in 0 until shape[1]) {
+                val columnName = columns[j]
+                val cellValue = data[columnName]!![i].toString()
+                val padding = columnMaxPaddingMap[columnName]!!
+
+                builder.append(cellValue)
+                builder.append(" ".repeat(padding - cellValue.length))
+            }
+            builder.append("\n") // Move to the next row
+        }
+
         return builder.toString()
     }
+}
+
+fun <T> calculate_max_len_of_column(arr: List<T>): Int {
+    var result = 0
+    for (index in arr.indices) {
+        result = max(arr[index].toString().length, result)
+    }
+    return result
 }
 
 fun main() {
@@ -145,15 +179,14 @@ fun main() {
     val filteredDf = df.filter { (it["age"] as Int) > 25 }
     println("Filtered DataFrame (age > 25):")
     println(filteredDf)
-    //todo fix this bug
 
     val sortedDf = df.sortBy("salary", ascending = false)
     println("Sorted DataFrame (salary descending):")
     println(sortedDf)
 
-    val selectedDf = df[listOf("name", "salary")]
-    println("Selected columns (name, salary):")
-    println(selectedDf)
+//    val selectedDf = df[listOf("name", "salary")]
+//    println("Selected columns (name, salary):")
+//    println(selectedDf)
 
     df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
