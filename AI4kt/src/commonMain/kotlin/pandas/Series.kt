@@ -3,11 +3,16 @@ package io.ai4kt.ai4kt.fibonacci.pandas
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.reflect.KClass
 
-class Series<T>(private val data: List<T?>, private val index: List<Any>? = null) : Iterable<T?> {
+class Series<T : Any?>(
+    val data: List<T?>,
+    val index: List<Any>? = null
+) : Iterable<T?> {
     init {
         if (index != null && index.size != data.size) {
             throw IllegalArgumentException("Index length must match data length.")
@@ -16,6 +21,23 @@ class Series<T>(private val data: List<T?>, private val index: List<Any>? = null
 
     val shape: List<Int>
         get() = listOf(data.size)
+
+    val dtype: String = try {
+        this.data[0] as Int
+        "Int"
+    } catch (ex: Exception) {
+        try {
+            this.data[0] as Double
+            "Double"
+        } catch (e: Exception) {
+            try {
+                this.data[0] as String
+                "String"
+            } catch (e: Exception) {
+                "Any"
+            }
+        }
+    }
 
     operator fun get(position: Int): Any? {
         return data[position]
@@ -37,14 +59,14 @@ class Series<T>(private val data: List<T?>, private val index: List<Any>? = null
     }
 
     fun filter(condition: (Any?) -> Boolean): Series<T> {
-        val filteredData = data.filter(condition)
+        val filteredData = data.toList().filter(condition)
         val filteredIndex = index?.let { idx ->
             data.indices.filter { condition(data[it]) }.map { idx[it] }
         }
         return Series(filteredData, filteredIndex)
     }
 
-    operator fun <T> plus(other: Series<T>): Series<Double> {
+    operator fun <T : Any> plus(other: Series<T>): Series<Double> {
         if (this.data.size != other.data.size) throw IllegalArgumentException("Series lengths must match.")
         val result = this.data.mapIndexed { i, a ->
             when (a) {

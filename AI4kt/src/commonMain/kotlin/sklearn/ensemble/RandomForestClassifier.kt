@@ -206,10 +206,13 @@ fun main() {
     )
 
     val randomForest = RandomForestClassifier(numTrees = 100, maxDepth = 10, minSamplesSplit = 2)
-    randomForest.fit(X = dataSet.X_train, y = dataSet.y_train)
+    randomForest.fit(
+        X = dataSet["X_train"] as D2Array<Double>,
+        y = dataSet["y_train"] as D1Array<Int>
+    )
 
-    val y_pred = randomForest.predict(dataSet.X_test)
-    val accuracy = accuracy_score(dataSet.y_test, y_pred)
+    val y_pred = randomForest.predict(dataSet["X_test"] as D2Array<Double>)
+    val accuracy = accuracy_score(dataSet["y_test"] as D1Array<Int>, y_pred)
     println("Accuracy: $accuracy")
 }
 

@@ -21,7 +21,7 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
     }
 
     // Convert data to a map of columns with automatic type detection
-    val columnData = header.associateWith { columnName ->
+    val columnData: Map<String, Series<Any?>> = header.associateWith { columnName ->
         val columnValues = data.map { row -> row[columnName] }
         val convertedValues = when {
             columnValues.all { it?.isInt() == true } -> columnValues.map { it?.toIntOrNull() } // Convert to Int
@@ -31,7 +31,7 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
         Series(convertedValues)
     }
 
-    return DataFrame(columnData.toMutableMap()as MutableMap<String, Series<Any?>>)
+    return DataFrame(columnData.toMutableMap())
 }
 
 // Helper function to check if a string is an integer

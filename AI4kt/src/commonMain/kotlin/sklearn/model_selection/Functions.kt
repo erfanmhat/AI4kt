@@ -1,46 +1,45 @@
 package io.ai4kt.ai4kt.fibonacci.sklearn.model_selection
 
 import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.fibonacci.sklearn.DataSet
 import io.ai4kt.ai4kt.pandas.DataFrame
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
-import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
-import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
-import org.jetbrains.kotlinx.multik.ndarray.data.get
-import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.filter
 import org.jetbrains.kotlinx.multik.ndarray.operations.filterMultiIndexed
 import kotlin.random.Random
-
 
 /**
  * Splits arrays or matrices into random train and test subsets.
  *
  * @param X The input features (DataFrame or List).
- * @param y The target labels (List).
+ * @param y The target labels (Series or D1Array).
  * @param test_size The proportion of the dataset to include in the test split (default = 0.2).
  * @param train_size The proportion of the dataset to include in the train split (default = complement of testSize).
  * @param random_state Seed for random number generation (default = null).
  * @param shuffle Whether to shuffle the data before splitting (default = true).
  * @param stratify If not null, data is split in a stratified fashion using this as the class labels (default = null).
- * @return A list containing train-test split of inputs: [X_train, X_test, y_train, y_test].
+ * @return A map containing train-test split of inputs: [X_train, X_test, y_train, y_test].
  */
-fun train_test_split(
+inline fun <reified T : Number> train_test_split(
     X: DataFrame,
-    y: Series<Int>,
+    y: Series<T>,
     test_size: Double? = 0.2,
     train_size: Double? = null,
     random_state: Int? = null,
     shuffle: Boolean = true,
     stratify: List<Int>? = null
-): DataSet {
+): MutableMap<String, Any> {
     val X_D2Array = X.getValues(Double::class)
-    val y_D1Array = y.getValues(Int::class)
+    val y_D1Array = when (T::class) {
+        Int::class -> y.getValues(Int::class)
+        Double::class -> y.getValues(Double::class)
+        else -> throw IllegalArgumentException("Unsupported type for y: ${T::class}")
+    }
     return train_test_split(
         X = X_D2Array,
-        y = y_D1Array,
+        y = y_D1Array as D1Array<T>,
         test_size = test_size,
         train_size = train_size,
         random_state = random_state,
@@ -52,24 +51,24 @@ fun train_test_split(
 /**
  * Splits arrays or matrices into random train and test subsets.
  *
- * @param X The input features (DataFrame or List).
- * @param y The target labels (List).
+ * @param X The input features (D2Array<Double>).
+ * @param y The target labels (D1Array<T>).
  * @param test_size The proportion of the dataset to include in the test split (default = 0.2).
  * @param train_size The proportion of the dataset to include in the train split (default = complement of testSize).
  * @param random_state Seed for random number generation (default = null).
  * @param shuffle Whether to shuffle the data before splitting (default = true).
  * @param stratify If not null, data is split in a stratified fashion using this as the class labels (default = null).
- * @return A list containing train-test split of inputs: [X_train, X_test, y_train, y_test].
+ * @return A map containing train-test split of inputs: [X_train, X_test, y_train, y_test].
  */
-fun train_test_split(
+inline fun <reified T : Number> train_test_split(
     X: D2Array<Double>,
-    y: D1Array<Int>,
+    y: D1Array<T>,
     test_size: Double? = 0.2,
     train_size: Double? = null,
     random_state: Int? = null,
     shuffle: Boolean = true,
     stratify: List<Int>? = null
-): DataSet {
+): MutableMap<String, Any> {
     require(X.shape[0] != 0) { "Input features (X) cannot be empty." }
     require(y.shape[0] != 0) { "Target labels (y) cannot be empty." }
     require(X.shape[0] == y.shape[0]) { "X and y must have the same length. X:${X.shape.contentToString()}, y:${y.shape.contentToString()}." }
@@ -99,35 +98,39 @@ fun train_test_split(
     val train_indices = indices.subList(0, n_train)
     val test_indices = indices.subList(n_train, n_train + n_test)
 
-
     val X_train = mk.zeros<Double>(train_indices.size, X.shape[1])
     for ((i, idx) in train_indices.withIndex()) {
         X_train[i] = X[idx]
     }
 
-    // Create X_test by filtering rows based on test_indices
     val X_test = mk.zeros<Double>(test_indices.size, X.shape[1])
     for ((i, idx) in test_indices.withIndex()) {
         X_test[i] = X[idx]
     }
 
-    // Create y_train by filtering elements based on train_indices
-    val y_train = mk.zeros<Int>(train_indices.size)
+    val y_train = when (T::class) {
+        Int::class -> mk.zeros<Int>(train_indices.size) as D1Array<T>
+        Double::class -> mk.zeros<Double>(train_indices.size) as D1Array<T>
+        else -> throw IllegalArgumentException("Unsupported type for y: ${T::class}")
+    }
     for ((i, idx) in train_indices.withIndex()) {
         y_train[i] = y[idx]
     }
 
-    // Create y_test by filtering elements based on test_indices
-    val y_test = mk.zeros<Int>(test_indices.size)
+    val y_test = when (T::class) {
+        Int::class -> mk.zeros<Int>(test_indices.size) as D1Array<T>
+        Double::class -> mk.zeros<Double>(test_indices.size) as D1Array<T>
+        else -> throw IllegalArgumentException("Unsupported type for y: ${T::class}")
+    }
     for ((i, idx) in test_indices.withIndex()) {
         y_test[i] = y[idx]
     }
 
-    return DataSet(
-        X_train = X_train,
-        X_test = X_test,
-        y_train = y_train,
-        y_test = y_test,
+    return mutableMapOf(
+        "X_train" to X_train,
+        "X_test" to X_test,
+        "y_train" to y_train,
+        "y_test" to y_test
     )
 }
 
@@ -139,7 +142,7 @@ fun train_test_split(
  * @param train_size The proportion of the dataset to include in the train split.
  * @return A pair containing the number of train and test samples.
  */
-private fun calculate_train_test_sizes(
+fun calculate_train_test_sizes(
     n_samples: Int,
     test_size: Double?,
     train_size: Double?
@@ -167,8 +170,8 @@ private fun calculate_train_test_sizes(
  * @param n_test Number of test samples.
  * @return A list of shuffled indices.
  */
-private fun stratified_shuffle_split(
-    y: D1Array<Int>,
+fun <T : Number> stratified_shuffle_split(
+    y: D1Array<T>,
     stratify: List<Int>,
     n_train: Int,
     n_test: Int
@@ -178,27 +181,22 @@ private fun stratified_shuffle_split(
     val testIndices = mutableListOf<Int>()
 
     for ((cls, count) in classCounts) {
-        // جمع‌آوری اندیس‌های مربوط به کلاس فعلی
         val clsIndices = mutableListOf<Int>()
         for (i in 0 until y.size) {
-            if (y[i] == cls) {
+            if (y[i].toInt() == cls) {
                 clsIndices.add(i)
             }
         }
 
-        // شافل کردن اندیس‌های کلاس
         clsIndices.shuffle()
 
-        // محاسبه تعداد نمونه‌های train و test برای این کلاس
         val n_train_cls = (count * n_train.toDouble() / y.size).toInt()
         val n_test_cls = (count * n_test.toDouble() / y.size).toInt()
 
-        // اضافه کردن اندیس‌ها به train و test
         trainIndices.addAll(clsIndices.subList(0, n_train_cls))
         testIndices.addAll(clsIndices.subList(n_train_cls, n_train_cls + n_test_cls))
     }
 
-    // ترکیب و شافل نهایی اندیس‌ها
     return (trainIndices + testIndices).shuffled()
 }
 
@@ -214,10 +212,10 @@ fun main() {
     )
     val y = mk.ndarray(mk[0, 1, 0, 1, 0])
 
-    val (X_train, X_test, y_train, y_test) = train_test_split(X, y, test_size = 0.2, random_state = 42)
+    val dataSet = train_test_split(X, y, test_size = 0.2, random_state = 42)
 
-    println("X_train: $X_train")
-    println("X_test: $X_test")
-    println("y_train: $y_train")
-    println("y_test: $y_test")
+    println("X_train: " + dataSet["X_train"])
+    println("X_test: " + dataSet["X_test"])
+    println("y_train: " + dataSet["y_train"])
+    println("y_test: " + dataSet["y_test"])
 }

@@ -153,6 +153,14 @@ fun D2Array<Double>.argmax(axis: Int? = null): Any {
     }
 }
 
+operator fun <E> List<E>.get(intRange: IntRange): List<E> {
+    val result = mutableListOf<E>()
+    for (index in intRange) {
+        result.add(this[index])
+    }
+    return result
+}
+
 fun main() {
     val data = mk.d2array(3, 3) { (it % 3 + it / 3).toDouble() } // Example 2D array
     println("Data:")

@@ -17,6 +17,10 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
     val shape: List<Int>
         get() = listOf(if (data.isNotEmpty()) data.values.first().shape[0] else 0, data.size)
 
+    val dtypes: List<String>
+        get() = data.map { it.value.dtype }
+
+
     fun iloc(index: Int): Map<String, Any?> {
         if (index !in 0 until shape[1]) throw IndexOutOfBoundsException("Row index out of bounds.")
         return data.mapValues { it.value[index] }

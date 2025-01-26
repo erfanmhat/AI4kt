@@ -15,6 +15,7 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.models.DeepLearningModel
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.AdamOptimizer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import kotlin.random.Random
 
 fun main() {
@@ -45,13 +46,18 @@ fun main() {
     val oneHot = OneHotEncoding()
 
     val scaler = MinMaxScaler()
-    dataSet.X_train = scaler.fitTransform(dataSet.X_train)
-    dataSet.X_test = scaler.transform(dataSet.X_test)
-    model.fit(dataSet.X_train, oneHot.transform(dataSet.y_train), epochs = 100, batchSize = 32)
+    dataSet["X_train"] = scaler.fitTransform(dataSet["X_train"] as D2Array<Double>) as Any
+    dataSet["X_test"] = scaler.transform(dataSet["X_test"] as D2Array<Double>)
+    model.fit(
+        dataSet["X_train"] as D2Array<Double>,
+        oneHot.transform(dataSet["y_train"] as D1Array<Int>),
+        epochs = 100,
+        batchSize = 32
+    )
 
 
-    val y_pred = model.predict(dataSet.X_test)
+    val y_pred = model.predict(dataSet["X_test"] as D2Array<Double>)
     val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
-    val accuracy = accuracy_score(dataSet.y_test, y_pred_class)
+    val accuracy = accuracy_score(dataSet["y_test"] as D1Array<Int>, y_pred_class)
     println("Accuracy: $accuracy")
 }
