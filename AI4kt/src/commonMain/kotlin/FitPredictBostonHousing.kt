@@ -13,6 +13,7 @@ import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import kotlin.random.Random
 
 fun main() {
@@ -20,8 +21,9 @@ fun main() {
 
     // Load the Boston Housing dataset
     val filePath = "D:\\repo\\AI4kt\\data\\Boston_Housing_Dataset.csv" // Update this path to your dataset location
-    val df = read_csv(filePath)
-    println(df.dtypes)
+    var df = read_csv(filePath)
+    df = df.drop("Index")
+
     // Define the target column
     val targetColumn = "PRICE" // Median value of owner-occupied homes (in $1000s)
 
@@ -36,8 +38,9 @@ fun main() {
     // Build the deep learning model
     val model = DeepLearningModel(random)
         .addInputLayer(13) // 13 features in the Boston Housing dataset
-        .addDenseLayer(10, ReLU()) // Hidden layer with 10 neurons
-        .addDenseLayer(10, ReLU()) // Another hidden layer
+        .addDenseLayer(100, ReLU()) // Hidden layer with 10 neurons
+        .addDenseLayer(50, ReLU()) // Another hidden layer
+        .addDenseLayer(20, ReLU()) // Another hidden layer
         .addDenseLayer(1) // Output layer with 1 neuron (regression task)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossMeanSquaredError()) // Loss function for regression
@@ -49,10 +52,11 @@ fun main() {
     dataSet["X_test"] = scaler.transform(dataSet["X_test"] as D2Array<Double>)
 
     // Train the model
+    val y_train = dataSet["y_train"] as D1Array<Double>
     model.fit(
         dataSet["X_train"] as D2Array<Double>,
-        dataSet["y_train"] as D1Array<Double>, // No one-hot encoding needed for regression
-        epochs = 100,
+        y_train.reshape(y_train.shape[0], 1),
+        epochs = 140,
         batchSize = 32
     )
 

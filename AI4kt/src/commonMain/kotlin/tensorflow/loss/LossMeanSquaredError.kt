@@ -22,7 +22,7 @@ class LossMeanSquaredError : Loss {
 
         // Compute the mean squared error for each sample
         val squaredDifferencesSum: D1Array<Double> = mk.math.sum(a = squaredDifferences, axis = 1)
-        return squaredDifferencesSum / output.shape[1].toDouble()
+        return squaredDifferencesSum / output.shape[0].toDouble()
     }
 
     // Calculate the gradient of the mean squared error loss
@@ -39,14 +39,18 @@ class LossMeanSquaredError : Loss {
 
 fun main() {
     // Example predicted values (output) and true values (y)
-    val output = mk.ndarray(mk[
-        mk[1.0, 2.0, 3.0],
-        mk[4.0, 5.0, 6.0]
-    ]) // D2Array<Double>
-    val y = mk.ndarray(mk[
-        mk[1.5, 2.5, 3.5],
-        mk[4.5, 5.5, 6.5]
-    ]) // D2Array<Double>
+    val output = mk.ndarray(
+        mk[
+            mk[1.0, 2.0, 3.0],
+            mk[4.0, 5.0, 6.0]
+        ]
+    ) // D2Array<Double>
+    val y = mk.ndarray(
+        mk[
+            mk[1.5, 2.5, 3.5],
+            mk[4.5, 5.5, 6.5]
+        ]
+    ) // D2Array<Double>
 
     // Create an instance of LossMeanSquaredError
     val loss = LossMeanSquaredError()

@@ -3,7 +3,6 @@ package io.ai4kt.ai4kt.fibonacci.tensorflow.models
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Activation
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
-import io.ai4kt.ai4kt.fibonacci.tensorflow.get
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.DNNLayer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.InputLayer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.Layer
@@ -11,8 +10,6 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.Loss
 import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossCategoricalCrossentropy
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.Optimizer
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
@@ -20,7 +17,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
-import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.random.Random
 
 class DeepLearningModel(
@@ -122,7 +118,7 @@ class DeepLearningModel(
     // Fit function
     fun fit(
         X: D2Array<Double>,
-        y: NDArray<Double, *>,
+        y: D2Array<Double>,
         epochs: Int,
         batchSize: Int
     ) {
@@ -133,7 +129,7 @@ class DeepLearningModel(
             for (startIdx in 0 until nSamples step batchSize) {
                 val endIdx = minOf(startIdx + batchSize, nSamples)
                 val XBatch = X[startIdx until endIdx] as D2Array<Double>
-                val yBatch = (y as D2Array<Double>)[startIdx until endIdx] as D2Array<Double>
+                val yBatch = y[startIdx until endIdx] as D2Array<Double>
                 // Perform a training step on the batch
                 trainStep(XBatch, yBatch)
             }
@@ -145,16 +141,6 @@ class DeepLearningModel(
     fun predict(X: D2Array<Double>): D2Array<Double> {
         return forward(X)
     }
-}
-
-private operator fun D2Array<Double>.get(intRange: IntRange): D2Array<Double> {
-    val result = mk.zeros<Double>(intRange.last - intRange.first, this.shape[1])
-    for (i in intRange.first until intRange.last) {
-        for (j in 0..<this.shape[1]) {
-            result[i, j] = this[i, j]
-        }
-    }
-    return result
 }
 
 fun main() {
