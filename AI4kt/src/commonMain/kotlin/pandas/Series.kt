@@ -3,14 +3,13 @@ package io.ai4kt.ai4kt.fibonacci.pandas
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
-import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.reflect.KClass
 
 class Series<T : Any?>(
-    val data: List<T?>,
+    val data: MutableList<T?>,
     val index: List<Any>? = null
 ) : Iterable<T?> {
     init {
@@ -63,7 +62,7 @@ class Series<T : Any?>(
         val filteredIndex = index?.let { idx ->
             data.indices.filter { condition(data[it]) }.map { idx[it] }
         }
-        return Series(filteredData, filteredIndex)
+        return Series(filteredData.toMutableList(), filteredIndex)
     }
 
     operator fun <T : Any> plus(other: Series<T>): Series<Double> {
@@ -78,7 +77,7 @@ class Series<T : Any?>(
                 else -> throw UnsupportedOperationException("Unsupported type for addition.")
             }
         }
-        return Series(result, this.index)
+        return Series(result.toMutableList(), this.index)
     }
 
     fun sum(): Double {
@@ -128,12 +127,16 @@ class Series<T : Any?>(
         val nonNullIndex = index?.let { idx ->
             data.indices.filter { data[it] != null }.map { idx[it] }
         }
-        return Series(nonNullData, nonNullIndex)
+        return Series(nonNullData.toMutableList(), nonNullIndex)
     }
 
     fun fillna(value: T): Series<T> {
         val filledData = data.map { it ?: value }
-        return Series(filledData, index)
+        return Series(filledData.toMutableList(), index)
+    }
+
+    fun unique(): List<T> {
+        return data.distinct().filterNotNull()
     }
 
     fun toList(): List<Any?> {
@@ -158,12 +161,24 @@ class Series<T : Any?>(
         }
         return builder.toString()
     }
+
+    operator fun set(i: Int, value: T) {
+        data[i] = value
+    }
+}
+
+fun <T> List<T>.asSeries(): Series<Any?> {
+    return Series(this.toMutableList())
+}
+
+fun <T> D1Array<T>.asSeries(): Series<Any?> {
+    return Series(this.toList().toMutableList())
 }
 
 fun main() {
     val numericData = listOf(1, 2, null, 4, 5)
     val numericIndex = listOf("a", "b", "c", "d", "e")
-    val numericSeries = Series(numericData, numericIndex)
+    val numericSeries = Series(numericData.toMutableList(), numericIndex)
 
     println(numericSeries)
     println("Sum: ${numericSeries.sum()}")
@@ -179,7 +194,7 @@ fun main() {
 
     val stringData = listOf("1", "2", null, "4", "5")
     val stringIndex = listOf("a", "b", "c", "d", "e")
-    val stringSeries = Series(stringData, stringIndex)
+    val stringSeries = Series(stringData.toMutableList(), stringIndex)
 
     println(stringSeries)
 }

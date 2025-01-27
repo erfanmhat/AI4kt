@@ -28,7 +28,7 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
             columnValues.all { it?.isNumeric() == true } -> columnValues.map { it?.toDoubleOrNull() } // Convert to Double
             else -> columnValues // Keep as String if not all values are numeric
         }
-        Series(convertedValues)
+        Series(convertedValues.toMutableList())
     }
 
     return DataFrame(columnData.toMutableMap())
@@ -66,7 +66,7 @@ fun main() {
     println("Selected columns (name, salary):")
     println(selectedDf)
 
-    df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
+    df["bonus"] = Series(mutableListOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
     println(df)
 }

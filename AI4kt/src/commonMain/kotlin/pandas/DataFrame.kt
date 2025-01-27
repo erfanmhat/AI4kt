@@ -2,15 +2,20 @@ package io.ai4kt.ai4kt.pandas
 
 
 import io.ai4kt.ai4kt.fibonacci.pandas.Series
+import io.ai4kt.ai4kt.fibonacci.pandas.asSeries
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.reflect.KClass
 
-class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
+class DataFrame(val data: MutableMap<String, Series<Any?>>) {
 
     val columns: List<String>
         get() = data.keys.toList()
@@ -32,7 +37,7 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
             condition(iloc(index))
         }
         val filteredData = data.mapValues { (_, series) ->
-            Series(filteredIndices.map { series[it] })
+            Series(filteredIndices.map { series[it] }.toMutableList())
         }
         return DataFrame(filteredData.toMutableMap() as MutableMap<String, Series<Any?>>)
     }
@@ -77,7 +82,7 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
             .map { it.index }
             .let { if (!ascending) it.reversed() else it }
         val sortedData = data.mapValues { (_, series) ->
-            Series(sortedIndices.map { series[it] })
+            Series(sortedIndices.map { series[it] }.toMutableList())
         }
         return DataFrame(sortedData.toMutableMap() as MutableMap<String, Series<Any?>>)
     }
@@ -114,6 +119,84 @@ class DataFrame(private val data: MutableMap<String, Series<Any?>>) {
         val mean = mean(columnName)
         val column = this[columnName]
         return column.toList().filterIsInstance<Number>().map { (it.toDouble() - mean).pow(2) }.average()
+    }
+
+    /**
+     * Concatenates two DataFrames along the specified axis.
+     *
+     * @param other The DataFrame to concatenate with.
+     * @param axis The axis along which to concatenate (0 for rows, 1 for columns).
+     * @return A new DataFrame containing the concatenated data.
+     * @throws IllegalArgumentException If the axis is invalid or the shapes are incompatible.
+     */
+    fun concat(other: DataFrame, axis: Int = 0): DataFrame {
+        return when (axis) {
+            // Concatenate along rows (axis=0)
+            0 -> {
+                // Ensure both DataFrames have the same columns
+                if (this.columns != other.columns) {
+                    throw IllegalArgumentException("Columns must match for row-wise concatenation.")
+                }
+
+                // Combine the data from both DataFrames
+                val newData = this.columns.associateWith { columnName ->
+                    Series((this[columnName].toList() + other[columnName].toList()).toMutableList())
+                }.toMutableMap()
+
+                DataFrame(newData as MutableMap<String, Series<Any?>>)
+            }
+
+            // Concatenate along columns (axis=1)
+            1 -> {
+                // Ensure both DataFrames have the same number of rows
+                if (this.shape[0] != other.shape[0]) {
+                    throw IllegalArgumentException("Row counts must match for column-wise concatenation.")
+                }
+
+                // Combine the columns from both DataFrames
+                val newData = this.data.toMutableMap()
+                for ((columnName, series) in other.data) {
+                    if (newData.containsKey(columnName)) {
+                        throw IllegalArgumentException("Duplicate column name: $columnName")
+                    }
+                    newData[columnName] = series
+                }
+
+                DataFrame(newData)
+            }
+
+            else -> throw IllegalArgumentException("Invalid axis value. Use 0 for rows or 1 for columns.")
+        }
+    }
+
+    /**
+     * Returns the first `n` rows of the DataFrame.
+     *
+     * @param n The number of rows to return. Default is 5.
+     * @return A new DataFrame containing the first `n` rows.
+     */
+    fun head(n: Int = 5): DataFrame {
+        require(n >= 0) { "Number of rows must be non-negative." }
+        val numRows = min(n, shape[0]) // Ensure we don't exceed the number of rows
+        val newData = data.mapValues { (_, series) ->
+            Series(series.toList().take(numRows).toMutableList())
+        }.toMutableMap()
+        return DataFrame(newData as MutableMap<String, Series<Any?>>)
+    }
+
+    /**
+     * Returns the last `n` rows of the DataFrame.
+     *
+     * @param n The number of rows to return. Default is 5.
+     * @return A new DataFrame containing the last `n` rows.
+     */
+    fun tail(n: Int = 5): DataFrame {
+        require(n >= 0) { "Number of rows must be non-negative." }
+        val numRows = min(n, shape[0]) // Ensure we don't exceed the number of rows
+        val newData = data.mapValues { (_, series) ->
+            Series(series.toList().takeLast(numRows).toMutableList())
+        }.toMutableMap()
+        return DataFrame(newData as MutableMap<String, Series<Any?>>)
     }
 
     override fun toString(): String {
@@ -160,11 +243,31 @@ fun <T> calculate_max_len_of_column(arr: List<T>): Int {
     return result
 }
 
+fun D2Array<Double>.asDataFrame(prefix: String): DataFrame {
+    val result = mutableMapOf<String, Series<Any?>>()
+
+    // Iterate over columns (shape[1] is the number of columns)
+    for (colIndex in 0 until this.shape[1]) {
+        // Create a list to store the column values
+        val columnValues = mk.zeros<Double>(this.shape[0])
+
+        // Populate the list with values from the D2Array
+        for (rowIndex in 0 until this.shape[0]) {
+            columnValues[rowIndex] = (this[rowIndex, colIndex])
+        }
+
+        // Convert the column to a Series<Any?> and add it to the result map
+        result["${prefix}_$colIndex"] = columnValues.asSeries()
+    }
+
+    return DataFrame(result)
+}
+
 fun main() {
     val data = mapOf(
-        "name" to Series(listOf("Alice", "Bob", "Charlie")),
-        "age" to Series(listOf(25, 30, 35)),
-        "salary" to Series(listOf(50000.0, 60000.0, 70000.0))
+        "name" to Series(mutableListOf("Alice", "Bob", "Charlie")),
+        "age" to Series(mutableListOf(25, 30, 35)),
+        "salary" to Series(mutableListOf(50000.0, 60000.0, 70000.0))
     )
 
     val df = DataFrame(data.toMutableMap() as MutableMap<String, Series<Any?>>)
@@ -188,7 +291,7 @@ fun main() {
     println("Selected columns (name, salary):")
     println(selectedDf)
 
-    df["bonus"] = Series(listOf(1000.0, 2000.0, 3000.0))
+    df["bonus"] = Series(mutableListOf(1000.0, 2000.0, 3000.0))
     println("DataFrame with bonus column:")
     println(df)
 }

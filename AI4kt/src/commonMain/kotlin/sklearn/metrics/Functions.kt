@@ -44,7 +44,7 @@ fun mean_squared_error(y_true: D1Array<*>, y_pred: D1Array<*>): Double {
     val squaredErrors = squaredDifferences * squaredDifferences
 
     // Calculate the mean of squared errors
-    return squaredErrors.sum() / y_true.size
+    return squaredErrors.sum() / y_true.shape[0]
 }
 
 /**

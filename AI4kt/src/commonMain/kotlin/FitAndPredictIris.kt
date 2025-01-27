@@ -33,7 +33,7 @@ fun main() {
         else if (it == "Iris-versicolor") 1
         else if (it == "Iris-virginica") 2
         else -1
-    })
+    }.toMutableList())
     // Split the dataset into training and testing sets
     val dataSet = train_test_split(
         df.drop(targetColumn),
