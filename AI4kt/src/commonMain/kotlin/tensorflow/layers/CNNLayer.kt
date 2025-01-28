@@ -95,11 +95,20 @@ class CNNLayer(
 
     private fun convolve(input: D4Array<Double>, weights: D4Array<Double>, stride: Int, padding: Int): D4Array<Double> {
         val (batchSize, inputChannels, inputHeight, inputWidth) = input.shape
-        val (outputChannels, _, kernelHeight, kernelWidth) = weights.shape
+        val (_, _, kernelHeight, kernelWidth) = weights.shape
 
         // Calculate output dimensions
         val outputHeight = (inputHeight - kernelHeight + 2 * padding) / stride + 1
         val outputWidth = (inputWidth - kernelWidth + 2 * padding) / stride + 1
+
+        // Validate input and weights shapes
+        if (inputChannels != weights.shape[1] || kernelHeight != weights.shape[2] || kernelWidth != weights.shape[3]) {
+            throw Exception(
+                "Input and weights shapes must match following requirements: " +
+                        "Input shape must have ${weights.shape[1]} input channels, " +
+                        "Weights shape must have a kernel height of $kernelHeight and kernel width of $kernelWidth"
+            )
+        }
 
         // Initialize output array
         val output = mk.zeros<Double>(batchSize, outputChannels, outputHeight, outputWidth)
@@ -142,10 +151,10 @@ class CNNLayer(
         padding: Int
     ): D4Array<Double> {
         val (batchSize, inputChannels, inputHeight, inputWidth) = input.shape
-        val (outputChannels, _, kernelHeight, kernelWidth) = dvalues.shape
+        val (_, _, outputHeight, outputWidth) = dvalues.shape
 
         // Initialize gradients for weights
-        val dweights = mk.zeros<Double>(outputChannels, inputChannels, kernelHeight, kernelWidth)
+        val dweights = mk.zeros<Double>(outputChannels, inputChannels, kernelSize, kernelSize)
 
         // Pad the input if necessary
         val paddedInput = if (padding > 0) {
@@ -157,19 +166,24 @@ class CNNLayer(
         // Compute gradients for weights
         for (oc in 0 until outputChannels) {
             for (ic in 0 until inputChannels) {
-                for (kh in 0 until kernelHeight) {
-                    for (kw in 0 until kernelWidth) {
+                // For each position in the kernel
+                for (kh in 0 until kernelSize) {
+                    for (kw in 0 until kernelSize) {
                         var sum = 0.0
+                        // Loop over the entire output gradient
                         for (b in 0 until batchSize) {
-                            for (oh in 0 until dvalues.shape[2]) {
-                                for (ow in 0 until dvalues.shape[3]) {
-                                    val ih = oh * stride + kh
-                                    val iw = ow * stride + kw
-                                    sum += paddedInput[b, ic, ih, iw] * dvalues[b, oc, oh, ow]
+                            for (oh in 0 until outputHeight) {
+                                for (ow in 0 until outputWidth) {
+                                    // Corresponding position in input
+                                    val ih = oh * stride + kh - padding
+                                    val iw = ow * stride + kw - padding
+                                    if (ih >= 0 && iw >= 0 && ih < inputHeight && iw < inputWidth) {
+                                        sum += paddedInput[b, ic, ih, iw] * dvalues[b, oc, oh, ow]
+                                    }
                                 }
                             }
                         }
-                        dweights[oc, ic, kh, kw] = sum
+                        dweights[oc, ic, kh, kw] = sum // Store the accumulated sum
                     }
                 }
             }
@@ -184,7 +198,7 @@ class CNNLayer(
         stride: Int,
         padding: Int
     ): D4Array<Double> {
-        val (batchSize, outputChannels, outputHeight, outputWidth) = dvalues.shape
+        val (batchSize, _, outputHeight, outputWidth) = dvalues.shape
         val (_, inputChannels, kernelHeight, kernelWidth) = weights.shape
 
         // Calculate input dimensions
