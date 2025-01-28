@@ -1,0 +1,6 @@
+1. get better regression result
+2. implement CNN
+3. implement RNN
+4. implement LSTM
+5. check loss
+6. throw Exception when model fit & predict with NaN

@@ -16,32 +16,31 @@ fun read_csv(filePath: String, delimiter: String = ","): DataFrame {
 
     // Extract data rows
     val data = lines.subList(1, lines.size).map { line ->
-        val values = line.split(delimiter).map { it.trim() }
-        header.zip(values).toMap()
+        line.split(delimiter).map { it.trim() }
     }
 
     // Convert data to a map of columns with automatic type detection
-    val columnData: Map<String, Series<Any?>> = header.associateWith { columnName ->
-        val columnValues = data.map { row -> row[columnName] }
+    val columnData: Map<String, Series<Any?>> = header.mapIndexed { index, columnName ->
+        val columnValues = data.map { row -> row[index] }
         val convertedValues = when {
-            columnValues.all { it?.isInt() == true } -> columnValues.map { it?.toIntOrNull() } // Convert to Int
-            columnValues.all { it?.isNumeric() == true } -> columnValues.map { it?.toDoubleOrNull() } // Convert to Double
+            columnValues.all { it.isInt() } -> columnValues.map { it.toIntOrNull() } // Convert to Int
+            columnValues.all { it.isNumeric() } -> columnValues.map { it.toDoubleOrNull() } // Convert to Double
             else -> columnValues // Keep as String if not all values are numeric
         }
-        Series(convertedValues.toMutableList())
-    }
+        columnName to Series(convertedValues.toMutableList())
+    }.toMap() as Map<String, Series<Any?>>
 
     return DataFrame(columnData.toMutableMap())
 }
 
 // Helper function to check if a string is an integer
-fun String?.isInt(): Boolean {
-    return this?.toIntOrNull() != null
+fun String.isInt(): Boolean {
+    return this.toIntOrNull() != null
 }
 
 // Helper function to check if a string is numeric
-fun String?.isNumeric(): Boolean {
-    return this?.toDoubleOrNull() != null
+fun String.isNumeric(): Boolean {
+    return this.toDoubleOrNull() != null
 }
 
 fun main() {
