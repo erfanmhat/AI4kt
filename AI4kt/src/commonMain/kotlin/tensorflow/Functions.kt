@@ -23,7 +23,7 @@ fun D2Array<Double>.plusD2Array(other: D2Array<Double>): D2Array<Double> {
 }
 
 // Extension function to sum a D2Array and a D1Array (broadcasting)
-fun D2Array<Double>.plusD1Array(other: D1Array<Double>): D2Array<Double> {
+fun D2Array<Double>.D2PlusD1Array(other: D1Array<Double>): D2Array<Double> {
     // Check if the number of columns in the D2Array matches the size of the D1Array
     require(this.shape[1] == other.size) { "D1Array size must match the number of columns in D2Array" }
 
@@ -137,18 +137,23 @@ fun D2Array<Double>.argmax(axis: Int? = null): Any {
             val flattened = this.flatten()
             flattened.indices.maxByOrNull { flattened[it] } ?: throw NoSuchElementException("Array is empty.")
         }
+
         0 -> {
             // Find the index of the maximum value along each column (axis 0)
             mk.d1array(this.shape[1]) { col ->
-                (0 until this.shape[0]).maxByOrNull { row -> this[row, col] } ?: throw NoSuchElementException("Column is empty.")
+                (0 until this.shape[0]).maxByOrNull { row -> this[row, col] }
+                    ?: throw NoSuchElementException("Column is empty.")
             }
         }
+
         1 -> {
             // Find the index of the maximum value along each row (axis 1)
             mk.d1array(this.shape[0]) { row ->
-                (0 until this.shape[1]).maxByOrNull { col -> this[row, col] } ?: throw NoSuchElementException("Row is empty.")
+                (0 until this.shape[1]).maxByOrNull { col -> this[row, col] }
+                    ?: throw NoSuchElementException("Row is empty.")
             }
         }
+
         else -> throw IllegalArgumentException("Axis must be null, 0, or 1.")
     }
 }
@@ -161,25 +166,74 @@ operator fun <E> List<E>.get(intRange: IntRange): List<E> {
     return result
 }
 
-fun main() {
-    val data = mk.d2array(3, 3) { (it % 3 + it / 3).toDouble() } // Example 2D array
-    println("Data:")
-    println(data)
+// Extension function to sum a D4Array and a D1Array (broadcasting)
+fun D4Array<Double>.D4PlusD1Array(other: D1Array<Double>): D4Array<Double> {
+    // Check if the number of channels in the D4Array matches the size of the D1Array
+    require(this.shape[1] == other.size) { "D1Array size must match the number of channels in D4Array" }
 
-    // No axis specified (flattened array)
-    val argmaxFlattened = data.argmax()
-    println("\nIndex of max value in flattened array: $argmaxFlattened")
+    // Create a new array to store the result
+    val result = mk.zeros<Double>(this.shape[0], this.shape[1], this.shape[2], this.shape[3])
 
-    // Axis 0 (columns)
-    val argmaxAxis0 = data.argmax(axis = 0)
-    println("\nIndices of max values along axis 0 (columns):")
-    println(argmaxAxis0)
+    // Perform element-wise addition with broadcasting
+    for (i in 0 until this.shape[0]) { // Batch dimension
+        for (j in 0 until this.shape[1]) { // Channel dimension
+            for (k in 0 until this.shape[2]) { // Height dimension
+                for (l in 0 until this.shape[3]) { // Width dimension
+                    result[i, j, k, l] = this[i, j, k, l] + other[j]
+                }
+            }
+        }
+    }
 
-    // Axis 1 (rows)
-    val argmaxAxis1 = data.argmax(axis = 1)
-    println("\nIndices of max values along axis 1 (rows):")
-    println(argmaxAxis1)
+    return result
 }
+
+fun main() {
+    // Create a 4D array (batchSize = 2, channels = 3, height = 2, width = 2)
+    val d4Array = mk.ndarray(
+        listOf(
+            listOf(
+                listOf(listOf(1.0, 2.0), listOf(3.0, 4.0)),
+                listOf(listOf(5.0, 6.0), listOf(7.0, 8.0)),
+                listOf(listOf(9.0, 10.0), listOf(11.0, 12.0))
+            ),
+            listOf(
+                listOf(listOf(13.0, 14.0), listOf(15.0, 16.0)),
+                listOf(listOf(17.0, 18.0), listOf(19.0, 20.0)),
+                listOf(listOf(21.0, 22.0), listOf(23.0, 24.0))
+            )
+        )
+    )
+
+    // Create a 1D array (size = 3, matching the number of channels)
+    val d1Array = mk.ndarray(listOf(1.0, 2.0, 3.0))
+
+    // Add the 1D array to the 4D array
+    val result = d4Array.D4PlusD1Array(d1Array)
+
+    // Print the result
+    println(result)
+}
+
+//fun main() {
+//    val data = mk.d2array(3, 3) { (it % 3 + it / 3).toDouble() } // Example 2D array
+//    println("Data:")
+//    println(data)
+//
+//    // No axis specified (flattened array)
+//    val argmaxFlattened = data.argmax()
+//    println("\nIndex of max value in flattened array: $argmaxFlattened")
+//
+//    // Axis 0 (columns)
+//    val argmaxAxis0 = data.argmax(axis = 0)
+//    println("\nIndices of max values along axis 0 (columns):")
+//    println(argmaxAxis0)
+//
+//    // Axis 1 (rows)
+//    val argmaxAxis1 = data.argmax(axis = 1)
+//    println("\nIndices of max values along axis 1 (rows):")
+//    println(argmaxAxis1)
+//}
 
 //fun main() {
 //    // Create a [M, 1] array

@@ -12,6 +12,7 @@ import io.ai4kt.ai4kt.fibonacci.tensorflow.models.DeepLearningModel
 import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.AdamOptimizer
 import io.ai4kt.ai4kt.pandas.DataFrame
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import kotlin.random.Random
 
@@ -58,7 +59,7 @@ fun main() {
         batchSize = 32
     )
 
-    val y_pred = model.predict(X_test_D2)
+    val y_pred = model.predict(X_test_D2) as D2Array<Double>
     val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
 
     val accuracy = accuracy_score(y_test, y_pred_class)

@@ -21,7 +21,7 @@ import kotlin.random.Random
 fun main() {
     val random = Random(42)
 
-    val filePath = "D:\\repo\\AI4kt\\data\\breast_cancer.csv"
+    val filePath = "D:\\repo\\AI4kt\\data\\classification\\breast_cancer.csv"
     val df = read_csv(filePath)
 
     val targetColumn = "target"
@@ -56,7 +56,7 @@ fun main() {
     )
 
 
-    val y_pred = model.predict(dataSet["X_test"] as D2Array<Double>)
+    val y_pred = model.predict(dataSet["X_test"] as D2Array<Double>) as D2Array<Double>
     val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
     val accuracy = accuracy_score(dataSet["y_test"] as D1Array<Int>, y_pred_class)
     println("Accuracy: $accuracy")

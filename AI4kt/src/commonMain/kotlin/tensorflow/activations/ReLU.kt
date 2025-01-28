@@ -3,24 +3,30 @@ package io.ai4kt.ai4kt.fibonacci.tensorflow.activations
 import io.ai4kt.ai4kt.fibonacci.tensorflow.times
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
+import org.jetbrains.kotlinx.multik.ndarray.operations.times
 
 class ReLU : Activation {
-    private lateinit var inputs: D2Array<Double>
+    private lateinit var inputs: NDArray<Double, *>
 
-    override fun forward(inputs: D2Array<Double>): D2Array<Double> {
+    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         this.inputs = inputs
         return inputs.map { if (it > 0) it else 0.0 }
     }
 
-    override fun backward(dvalues: D2Array<Double>, inputs: D2Array<Double>): D2Array<Double> {
+    override fun backward(dvalues: NDArray<Double, *>, inputs: NDArray<Double, *>): NDArray<Double, *> {
         require(dvalues.shape.contentEquals(inputs.shape)) {
             "dvalues and inputs must have same shape: " +
                     "dvalues.shape=${dvalues.shape.contentToString()}, " +
                     "inputs.shape=${inputs.shape.contentToString()}"
         }
-        return dvalues * inputs.map { if (it > 0) 1.0 else 0.0 }
+        if (dvalues.shape.size == 2) {
+            return (dvalues as D2Array<Double>) * (inputs.map { if (it > 0) 1.0 else 0.0 } as D2Array<Double>)
+        } else if (dvalues.shape.size == 4) {
+            return (dvalues as D4Array<Double>) * (inputs.map { if (it > 0) 1.0 else 0.0 } as D4Array<Double>)
+        }
+        throw Exception("this shape not supported in ReLU. shape${dvalues.shape.contentToString()}")
     }
 }
 

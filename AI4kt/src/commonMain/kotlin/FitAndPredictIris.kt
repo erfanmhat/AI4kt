@@ -20,7 +20,7 @@ fun main() {
     val random = Random(42)
 
     // Load the Iris dataset
-    val filePath = "D:\\repo\\AI4kt\\data\\iris.csv" // Update this path to your dataset location
+    val filePath = "D:\\repo\\AI4kt\\data\\classification\\iris.csv" // Update this path to your dataset location
     val df = read_csv(filePath)
 
     println(df.dtypes)
@@ -69,7 +69,7 @@ fun main() {
     )
 
     // Make predictions
-    val y_pred = model.predict(dataSet["X_test"] as D2Array<Double>)
+    val y_pred = model.predict(dataSet["X_test"] as D2Array<Double>) as D2Array<Double>
     val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
 
     // Calculate accuracy

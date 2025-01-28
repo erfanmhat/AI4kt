@@ -1,7 +1,7 @@
 package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
 
 import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Activation
-import io.ai4kt.ai4kt.fibonacci.tensorflow.plusD1Array
+import io.ai4kt.ai4kt.fibonacci.tensorflow.D2PlusD1Array
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.ndarray.data.*
@@ -23,7 +23,7 @@ class DNNLayer(
     var dbiases: D1Array<Double> = mk.zeros<Double>(n_neurons)
 
     // Cache for inputs during forward pass (used in backward pass)
-    private lateinit var inputs: D2Array<Double>
+    private lateinit var inputs: NDArray<Double, *>
 
     init {
         // Xavier/Glorot initialization for weights
@@ -34,12 +34,13 @@ class DNNLayer(
         biases = mk.zeros<Double>(n_neurons).map { 0.01 }
     }
 
-    override fun forward(inputs: D2Array<Double>): D2Array<Double> {
+    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+        require(inputs.shape.size == 2) { "inputs shape must be [M,N] but passed ${inputs.shape.contentToString()}" }
         // Cache the inputs for use in the backward pass
         this.inputs = inputs
 
         // Linear transformation
-        val output = mk.linalg.dot(inputs, weights).plusD1Array(biases)
+        val output = mk.linalg.dot(inputs as D2Array<Double>, weights).D2PlusD1Array(biases)
 //        val output = mk.linalg.dot(inputs, weights) + biases.broadcast(biases.size)todo
 
 
@@ -47,24 +48,25 @@ class DNNLayer(
         return activation?.forward(output) ?: output
     }
 
-    override fun backward(dvalues: D2Array<Double>): D2Array<Double> {
+    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+        require(dvalues.shape.size == 2) { "dvalues shape must be [M,N] but passed ${dvalues.shape.contentToString()}" }
         // Gradients for activation function (if any)
         val dactivation = if (activation != null) {
             // Pass the output of the layer (before activation) to the activation's backward method
-            val output = mk.linalg.dot(inputs, weights).plusD1Array(biases)
-            activation.backward(dvalues, output)
+            val output = mk.linalg.dot(inputs as D2Array<Double>, weights).D2PlusD1Array(biases)
+            activation.backward(dvalues as D2Array<Double>, output)
         } else {
             dvalues
         }
 
         // Gradients for weights
-        dweights = mk.linalg.dot(inputs.transpose(), dactivation)
+        dweights = mk.linalg.dot(inputs.transpose() as D2Array<Double>, dactivation as D2Array<Double>)
 
         // Gradients for biases (sum over the batch axis)
         dbiases = mk.math.sum(dactivation, axis = 0)
 
         // Gradients for inputs
-        val dinputs = mk.linalg.dot(dactivation, weights.transpose())
+        val dinputs = mk.linalg.dot(dactivation as D2Array<Double>, weights.transpose())
 
         return dinputs
     }

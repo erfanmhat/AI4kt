@@ -25,6 +25,7 @@ class DeepLearningModel(
     val layers = mutableListOf<Layer>()
     lateinit var optimizers: MutableList<Optimizer>
     lateinit var loss: Loss
+    var epochLosses = mutableListOf<Double>()
 
     fun setRandom(random: Random): DeepLearningModel {
         this.random = random
@@ -65,7 +66,7 @@ class DeepLearningModel(
     }
 
     // Forward pass
-    fun forward(inputs: D2Array<Double>): D2Array<Double> {
+    fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         var output = inputs
         for (layer in layers) {
             output = when (layer) {
@@ -74,11 +75,11 @@ class DeepLearningModel(
                 else -> throw IllegalArgumentException("Invalid layer type: ${layer::class.simpleName}")
             }
         }
-        return output
+        return output as D2Array<Double>
     }
 
     // Backward pass
-    fun backward(dvalues: D2Array<Double>) {
+    fun backward(dvalues: NDArray<Double, *>) {
         var grad = dvalues // Start with the initial gradients
 
         // Iterate through layers in reverse order
@@ -97,14 +98,16 @@ class DeepLearningModel(
         val output = forward(inputs)
 
         // Compute loss
-        val loss = mk.math.sum(loss.forward(output, yTrue))
+        val trainStepLoss = mk.math.sum(loss.forward(output, yTrue))
+        epochLosses.add(trainStepLoss)
+
         print("\r")
-        print("Loss: $loss")
+        print("Loss: ${epochLosses.average()}")
 //        runBlocking {
 //            delay(500)
 //        }
         // Backward pass
-        val dvalues = this.loss.backward(output, yTrue)
+        val dvalues = loss.backward(output, yTrue)
         backward(dvalues)
 
         // Update weights and biases
@@ -124,6 +127,8 @@ class DeepLearningModel(
     ) {
         val nSamples = X.shape[0]
         for (epoch in 1..epochs) {
+            epochLosses = mutableListOf()
+            // todo add shuffle
             println()
             println("Epoch $epoch/$epochs")
             for (startIdx in 0 until nSamples step batchSize) {
@@ -138,7 +143,7 @@ class DeepLearningModel(
     }
 
     // Predict function
-    fun predict(X: D2Array<Double>): D2Array<Double> {
+    fun predict(X: NDArray<Double, *>): NDArray<Double, *> {
         return forward(X)
     }
 }

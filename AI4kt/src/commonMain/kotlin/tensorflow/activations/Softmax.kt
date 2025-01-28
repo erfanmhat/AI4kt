@@ -10,11 +10,14 @@ import kotlin.math.exp
 class Softmax : Activation {
     private lateinit var output: D2Array<Double>
 
-    override fun forward(inputs: D2Array<Double>): D2Array<Double> {
+    override fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         // Stabilize by subtracting the max value in each row
         val maxValues: D1Array<Double> = mk.math.max(inputs, axis = 1) // Find max value in each row
         val stabilizedInputs =
-            inputs - maxValues.broadcast(inputs.shape[1], axis = 1) // Subtract max value from each row
+            (inputs as D2Array<Double>) - maxValues.broadcast(
+                inputs.shape[1],
+                axis = 1
+            ) // Subtract max value from each row
 
         // Compute exp of stabilized inputs
         val expValues = stabilizedInputs.map { exp(it) }
@@ -28,7 +31,7 @@ class Softmax : Activation {
         return probabilities
     }
 
-    override fun backward(dvalues: D2Array<Double>, inputs: D2Array<Double>): D2Array<Double> {
+    override fun backward(dvalues: NDArray<Double, *>, inputs: NDArray<Double, *>): D2Array<Double> {
         require(dvalues.shape.contentEquals(inputs.shape)) {
             "dvalues and inputs must have same shape: " +
                     "dvalues.shape=${dvalues.shape.contentToString()}, " +
@@ -53,7 +56,7 @@ class Softmax : Activation {
             val jacobianMatrix = diagOutput - outerProduct
 
             // Reshape dvalues[i] to a 2D row vector and compute gradients
-            val dvaluesRow = dvalues[i].reshape(1, dvalues[i].size)
+            val dvaluesRow = (dvalues as D2Array<Double>)[i].reshape(1, dvalues[i].size)
             val grad = mk.linalg.dot(dvaluesRow, jacobianMatrix)
 
             // Ensure the shape of grad matches dinputs[i]
