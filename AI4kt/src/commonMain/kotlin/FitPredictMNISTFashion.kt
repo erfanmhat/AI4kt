@@ -19,9 +19,9 @@ fun main() {
     val random = Random(42)
 
     val filePathTrain =
-        "D:\\repo\\AI4kt\\data\\classification\\MNIST\\mnist_train.csv"
+        "D:\\repo\\AI4kt\\data\\classification\\MNIST_FASHION\\fashion-mnist_train.csv"
     val filePathTest =
-        "D:\\repo\\AI4kt\\data\\classification\\MNIST\\mnist_test.csv"
+        "D:\\repo\\AI4kt\\data\\classification\\MNIST_FASHION\\fashion-mnist_test.csv"
     val df_train = read_csv(filePathTrain)
     val df_test = read_csv(filePathTest)
 
