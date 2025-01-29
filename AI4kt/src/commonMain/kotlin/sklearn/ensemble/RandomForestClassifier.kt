@@ -1,9 +1,9 @@
-package io.ai4kt.ai4kt.fibonacci.sklearn.ensemble
+package sklearn.ensemble
 
-import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.fibonacci.pandas.read_csv
-import io.ai4kt.ai4kt.fibonacci.sklearn.metrics.accuracy_score
-import io.ai4kt.ai4kt.fibonacci.sklearn.model_selection.train_test_split
+import pandas.Series
+import pandas.read_csv
+import sklearn.metrics.accuracy_score
+import sklearn.model_selection.train_test_split
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros

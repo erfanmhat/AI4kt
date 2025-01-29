@@ -1,6 +1,6 @@
-package io.ai4kt.ai4kt.fibonacci.sklearn
+package sklearn
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.broadcast
+import tensorflow.broadcast
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*

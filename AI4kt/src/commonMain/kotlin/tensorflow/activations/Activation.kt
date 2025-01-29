@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.activations
+package tensorflow.activations
 
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 

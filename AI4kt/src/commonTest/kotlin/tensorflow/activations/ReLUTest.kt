@@ -1,7 +1,8 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.activations
+package tensorflow.activations
 
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
+import tensorflow.activations.ReLU
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

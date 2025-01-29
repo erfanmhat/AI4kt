@@ -1,6 +1,6 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
+package tensorflow.layers
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
+import tensorflow.activations.ReLU
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.all

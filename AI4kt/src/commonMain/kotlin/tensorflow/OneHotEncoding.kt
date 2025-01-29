@@ -1,12 +1,10 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow
+package tensorflow
 
-import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.fibonacci.pandas.asSeries
-import io.ai4kt.ai4kt.pandas.DataFrame
+import pandas.Series
+import pandas.asSeries
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.indexOf
-import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import org.jetbrains.kotlinx.multik.ndarray.operations.max
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
 import kotlin.math.max

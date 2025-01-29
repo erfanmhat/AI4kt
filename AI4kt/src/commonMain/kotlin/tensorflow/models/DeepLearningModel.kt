@@ -1,23 +1,18 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.models
+package tensorflow.models
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Activation
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
-import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.DNNLayer
-import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.InputLayer
-import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.Layer
-import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.Loss
-import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossCategoricalCrossentropy
-import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
-import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.Optimizer
+import tensorflow.activations.Activation
+import tensorflow.layers.*
+import tensorflow.loss.Loss
+import tensorflow.optimizers.Optimizer
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.api.zeros
-import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
-import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-import org.jetbrains.kotlinx.multik.ndarray.data.get
-import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.data.*
+import tensorflow.activations.ReLU
+import tensorflow.activations.Softmax
+import tensorflow.loss.LossCategoricalCrossentropy
+import tensorflow.optimizers.GradientDescentOptimizer
 import kotlin.random.Random
+import tensorflow.get
 
 class DeepLearningModel(
     var random: Random
@@ -25,7 +20,7 @@ class DeepLearningModel(
     val layers = mutableListOf<Layer>()
     lateinit var optimizers: MutableList<Optimizer>
     lateinit var loss: Loss
-    var epochLosses = mutableListOf<Double>()
+    private var epochLosses = mutableListOf<Double>()
 
     fun setRandom(random: Random): DeepLearningModel {
         this.random = random
@@ -33,18 +28,23 @@ class DeepLearningModel(
     }
 
     // Builder methods
-    fun addInputLayer(nInputs: Int): DeepLearningModel {
-        layers.add(InputLayer(nInputs))
+    fun addInputLayer(vararg inputShape: Int): DeepLearningModel {
+        layers.add(InputLayer(*inputShape))
         return this
     }
 
     fun addDenseLayer(nNeurons: Int, activation: Activation? = null): DeepLearningModel {
         val nInputs = when (val lastLayer = layers.lastOrNull()) {
-            is InputLayer -> lastLayer.nInputs
+            is InputLayer -> lastLayer.inputShape.last() // Last dimension of input shape
             is DNNLayer -> lastLayer.weights.shape[1]
             else -> throw IllegalArgumentException("Invalid layer type")
         }
         layers.add(DNNLayer(nInputs, nNeurons, random, activation))
+        return this
+    }
+
+    fun addLayer(layer: Layer): DeepLearningModel {
+        layers.add(layer)
         return this
     }
 
@@ -69,11 +69,7 @@ class DeepLearningModel(
     fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         var output = inputs
         for (layer in layers) {
-            output = when (layer) {
-                is InputLayer -> layer.forward(output)
-                is DNNLayer -> layer.forward(output)
-                else -> throw IllegalArgumentException("Invalid layer type: ${layer::class.simpleName}")
-            }
+            output = layer.forward(output)
         }
         return output as D2Array<Double>
     }
@@ -84,16 +80,12 @@ class DeepLearningModel(
 
         // Iterate through layers in reverse order
         for (layer in layers.reversed()) {
-            grad = when (layer) {
-                is InputLayer -> grad
-                is DNNLayer -> layer.backward(grad) // Update gradients for DNNLayer
-                else -> throw IllegalArgumentException("Unsupported layer type: ${layer::class.simpleName}")
-            }
+            grad = layer.backward(grad)
         }
     }
 
     // Train step
-    fun trainStep(inputs: D2Array<Double>, yTrue: D2Array<Double>) {
+    fun trainStep(inputs: NDArray<Double, *>, yTrue: D2Array<Double>) {
         // Forward pass
         val output = forward(inputs)
 
@@ -103,16 +95,14 @@ class DeepLearningModel(
 
         print("\r")
         print("Loss: ${epochLosses.average()}")
-//        runBlocking {
-//            delay(500)
-//        }
+
         // Backward pass
         val dvalues = loss.backward(output, yTrue)
         backward(dvalues)
 
         // Update weights and biases
         for ((layer, optimizer) in layers.zip(optimizers)) {
-            if (layer is DNNLayer) {
+            if (layer is TrainableLayer) {
                 optimizer.update(layer)
             }
         }
@@ -120,7 +110,7 @@ class DeepLearningModel(
 
     // Fit function
     fun fit(
-        X: D2Array<Double>,
+        X: NDArray<Double, *>,
         y: D2Array<Double>,
         epochs: Int,
         batchSize: Int
@@ -128,15 +118,14 @@ class DeepLearningModel(
         val nSamples = X.shape[0]
         for (epoch in 1..epochs) {
             epochLosses = mutableListOf()
-            // todo add shuffle
             println()
             println("Epoch $epoch/$epochs")
             for (startIdx in 0 until nSamples step batchSize) {
                 val endIdx = minOf(startIdx + batchSize, nSamples)
-                val XBatch = X[startIdx until endIdx] as D2Array<Double>
-                val yBatch = y[startIdx until endIdx] as D2Array<Double>
+                val XBatch = X[startIdx until endIdx]
+                val yBatch = y[startIdx until endIdx]
                 // Perform a training step on the batch
-                trainStep(XBatch, yBatch)
+                trainStep(XBatch, yBatch as D2Array<Double>)
             }
         }
         println()

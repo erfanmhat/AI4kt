@@ -1,26 +1,8 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow
+package tensorflow
 
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.toList
-
-// Extension function to sum two D2Arrays
-fun D2Array<Double>.plusD2Array(other: D2Array<Double>): D2Array<Double> {
-    // Check if the arrays have the same shape
-    require(this.shape.contentEquals(other.shape)) { "Arrays must have the same shape" }
-
-    // Create a new array to store the result
-    val result = mk.zeros<Double>(this.shape[0], this.shape[1])
-
-    // Perform element-wise addition
-    for (i in 0 until this.shape[0]) {
-        for (j in 0 until this.shape[1]) {
-            result[i, j] = this[i, j] + other[i, j]
-        }
-    }
-
-    return result
-}
 
 // Extension function to sum a D2Array and a D1Array (broadcasting)
 fun D2Array<Double>.D2PlusD1Array(other: D1Array<Double>): D2Array<Double> {
@@ -186,6 +168,67 @@ fun D4Array<Double>.D4PlusD1Array(other: D1Array<Double>): D4Array<Double> {
     }
 
     return result
+}
+
+operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
+    // Ensure the range is valid for the first dimension of the array
+    require(intRange.first >= 0 && intRange.last < this.shape[0]) {
+        "Range $intRange is out of bounds for dimension 0 with size ${this.shape[0]}"
+    }
+
+    // Create a new shape for the sliced array
+    val newShape = this.shape.toMutableList().apply {
+        this[0] = intRange.count() // Update the size of the first dimension
+    }.toIntArray()
+
+    // Create a new array to store the sliced data
+    return when (newShape.size) {
+        1 -> {
+            val slicedArray = mk.zeros<Double>(newShape[0])
+            for (i in intRange.first..intRange.last) {
+                slicedArray[i] = (this as D1Array<Double>)[i]
+            }
+            slicedArray
+        }
+
+        2 -> {
+            val slicedArray = mk.zeros<Double>(newShape[0], newShape[1])
+            for (i in intRange.first..intRange.last) {
+                for (j in 0..this.shape[1]) {
+                    slicedArray[i, j] = (this as D2Array<Double>)[i, j]
+                }
+            }
+            slicedArray
+        }
+
+        3 -> {
+            val slicedArray = mk.zeros<Double>(newShape[0], newShape[1], newShape[2])
+            for (i in intRange.first..intRange.last) {
+                for (j in 0..this.shape[1]) {
+                    for (k in 0..this.shape[2]) {
+                        slicedArray[i, j, k] = (this as D3Array<Double>)[i, j, k]
+                    }
+                }
+            }
+            slicedArray
+        }
+
+        4 -> {
+            val slicedArray = mk.zeros<Double>(newShape[0], newShape[1], newShape[2], newShape[3])
+            for (i in intRange.first..intRange.last) {
+                for (j in 0..this.shape[1]) {
+                    for (k in 0..this.shape[2]) {
+                        for (l in 0..this.shape[3]) {
+                            slicedArray[i, j, k, l] = (this as D4Array<Double>)[i, j, k, l]
+                        }
+                    }
+                }
+            }
+            slicedArray
+        }
+
+        else -> throw Exception("unsupported dimension shape: ${newShape.contentToString()}")
+    }
 }
 
 fun main() {

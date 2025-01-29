@@ -1,9 +1,9 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.models
+package tensorflow.models
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Softmax
-import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossBinaryCrossentropy
-import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.GradientDescentOptimizer
+import tensorflow.activations.ReLU
+import tensorflow.activations.Softmax
+import tensorflow.loss.LossBinaryCrossentropy
+import tensorflow.optimizers.GradientDescentOptimizer
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import kotlin.random.Random

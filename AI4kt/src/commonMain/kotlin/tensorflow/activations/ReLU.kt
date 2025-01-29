@@ -1,6 +1,6 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.activations
+package tensorflow.activations
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.times
+import tensorflow.times
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.*

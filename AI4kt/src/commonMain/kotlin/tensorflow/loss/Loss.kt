@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.loss
+package tensorflow.loss
 
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array

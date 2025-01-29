@@ -1,19 +1,14 @@
-package io.ai4kt.ai4kt.fibonacci
-
-import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.fibonacci.pandas.read_csv
-import io.ai4kt.ai4kt.fibonacci.sklearn.MinMaxScaler
-import io.ai4kt.ai4kt.fibonacci.sklearn.metrics.mean_squared_error
-import io.ai4kt.ai4kt.fibonacci.sklearn.model_selection.train_test_split
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
-import io.ai4kt.ai4kt.fibonacci.tensorflow.loss.LossMeanSquaredError
-import io.ai4kt.ai4kt.fibonacci.tensorflow.models.DeepLearningModel
-import io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers.AdamOptimizer
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ndarray
+import pandas.Series
+import pandas.read_csv
+import sklearn.MinMaxScaler
+import sklearn.metrics.mean_squared_error
+import sklearn.model_selection.train_test_split
+import tensorflow.activations.ReLU
+import tensorflow.loss.LossMeanSquaredError
+import tensorflow.models.DeepLearningModel
+import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
-import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import kotlin.random.Random
 
 fun main() {

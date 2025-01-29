@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.fibonacci.pandas
+package pandas
 
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray

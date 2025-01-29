@@ -1,7 +1,7 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
+package tensorflow.layers
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.Activation
-import io.ai4kt.ai4kt.fibonacci.tensorflow.D2PlusD1Array
+import tensorflow.activations.Activation
+import tensorflow.D2PlusD1Array
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.ndarray.data.*
@@ -14,7 +14,7 @@ class DNNLayer(
     n_neurons: Int,
     private val random: Random,
     private val activation: Activation? = null
-) : Layer {
+) : TrainableLayer {
     var weights: D2Array<Double>
     var biases: D1Array<Double>
 

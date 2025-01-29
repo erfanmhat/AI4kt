@@ -1,14 +1,14 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
+package tensorflow.layers
 
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 
-class InputLayer(n_inputs: Int) : Layer {
-    val nInputs: Int = n_inputs
+class InputLayer(vararg inputShape: Int) : Layer {
+    val inputShape: IntArray = inputShape
 
     // The forward pass simply returns the input as-is
     override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
-        require(inputs.shape[1] == nInputs) {
-            "Input shape mismatch. Expected $nInputs features, but got ${inputs.shape[1]}."
+        require(inputs.shape.contentEquals(inputShape)) {
+            "Input shape mismatch. Expected ${inputShape.joinToString(", ")}, but got ${inputs.shape.joinToString(", ")}."
         }
         return inputs
     }

@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.pandas.api.extensions
+package pandas.api.extensions
 
 class ExtensionArray {
 }

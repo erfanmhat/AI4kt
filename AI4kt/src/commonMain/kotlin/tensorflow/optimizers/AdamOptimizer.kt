@@ -1,6 +1,6 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.optimizers
+package tensorflow.optimizers
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.layers.DNNLayer
+import tensorflow.layers.DNNLayer
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
@@ -8,6 +8,8 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
+import tensorflow.layers.CNNLayer
+import tensorflow.layers.TrainableLayer
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -33,7 +35,7 @@ class AdamOptimizer(
     private lateinit var v_biases: D1Array<Double>   // Second moment estimates for biases
     private var t: Int = 0  // Timestep
 
-    override fun update(layer: DNNLayer) {
+    override fun updateDNN(layer: DNNLayer) {
         // Initialize moment estimates for weights and biases only once
         if (!::m_weights.isInitialized) {
             m_weights = mk.zeros(layer.weights.shape[0], layer.weights.shape[1])  // Initialize m for weights (D2Array)
@@ -72,5 +74,9 @@ class AdamOptimizer(
 
         // Update biases
         layer.biases = layer.biases - learningRate * (m_hat_biases / (v_hat_biases.map { sqrt(it) } + epsilon))
+    }
+
+    override fun updateCNN(layer: CNNLayer) {
+        TODO()
     }
 }

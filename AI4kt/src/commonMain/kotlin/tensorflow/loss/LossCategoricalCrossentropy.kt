@@ -1,7 +1,7 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.loss
+package tensorflow.loss
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.OneHotEncoding
-import io.ai4kt.ai4kt.fibonacci.tensorflow.times
+import tensorflow.OneHotEncoding
+import tensorflow.times
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array

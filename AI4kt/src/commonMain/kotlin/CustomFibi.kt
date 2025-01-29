@@ -1,5 +1,3 @@
-package io.ai4kt.ai4kt.fibonacci
-
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.get

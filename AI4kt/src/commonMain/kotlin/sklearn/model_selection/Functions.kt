@@ -1,13 +1,11 @@
-package io.ai4kt.ai4kt.fibonacci.sklearn.model_selection
+package sklearn.model_selection
 
-import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.pandas.DataFrame
+import pandas.Series
+import pandas.DataFrame
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.*
-import org.jetbrains.kotlinx.multik.ndarray.operations.filter
-import org.jetbrains.kotlinx.multik.ndarray.operations.filterMultiIndexed
 import kotlin.random.Random
 
 /**

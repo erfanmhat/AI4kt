@@ -1,7 +1,6 @@
-package io.ai4kt.ai4kt.fibonacci.pandas
+package pandas
 
 import kotlinx.io.files.SystemFileSystem
-import io.ai4kt.ai4kt.pandas.DataFrame
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.readString

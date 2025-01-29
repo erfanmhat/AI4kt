@@ -1,8 +1,6 @@
-package io.ai4kt.ai4kt.pandas
+package pandas
 
 
-import io.ai4kt.ai4kt.fibonacci.pandas.Series
-import io.ai4kt.ai4kt.fibonacci.pandas.asSeries
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros

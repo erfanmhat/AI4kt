@@ -1,188 +1,144 @@
-package io.ai4kt.ai4kt.fibonacci.tensorflow.layers
+package tensorflow.layers
 
-import io.ai4kt.ai4kt.fibonacci.tensorflow.activations.ReLU
 import org.jetbrains.kotlinx.multik.api.*
+import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
-import kotlin.random.Random
+import tensorflow.activations.Activation
+import tensorflow.activations.ReLU
 import kotlin.test.*
+import kotlin.random.Random
 
 class CNNLayerTest {
+
+    private lateinit var cnnLayer: CNNLayer
     private val random = Random(42)
 
+    private fun createRandomInput(shape: IntArray): NDArray<Double, *> {
+        // Create a zero array and fill it with random values
+        return when (shape.size) {
+            1 -> mk.zeros<Double>(shape[0]).map { random.nextDouble(-1.0, 1.0) }
+            2 -> mk.zeros<Double>(shape[0], shape[1]).map { random.nextDouble(-1.0, 1.0) }
+            3 -> mk.zeros<Double>(shape[0], shape[1], shape[2]).map { random.nextDouble(-1.0, 1.0) }
+            4 -> mk.zeros<Double>(shape[0], shape[1], shape[2], shape[3]).map { random.nextDouble(-1.0, 1.0) }
+            else -> throw IllegalArgumentException("Shape $shape is not supported")
+        }
+    }
+
     @Test
-    fun testForwardPass() {
-        // Create a CNN layer with 1 input channel, 2 output channels, and a 3x3 kernel
-        val cnnLayer = CNNLayer(
-            inputChannels = 1,
-            outputChannels = 2,
-            kernelSize = 3,
-            random = random
-        )
+    fun testWeightInitialization() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
 
-        // Create a dummy input (batchSize=1, channels=1, height=4, width=4)
-        val input = mk.ndarray(
-            listOf(
-                listOf(
-                    listOf(
-                        listOf(1.0, 2.0, 3.0, 4.0),
-                        listOf(5.0, 6.0, 7.0, 8.0),
-                        listOf(9.0, 10.0, 11.0, 12.0),
-                        listOf(13.0, 14.0, 15.0, 16.0)
-                    )
-                )
-            )
-        )
+        assertEquals(filters, cnnLayer.weights.shape[0])
+        assertEquals(inputShape[2], cnnLayer.weights.shape[1])
+        assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
+        assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
+        assertTrue(cnnLayer.weights.all { it in -0.1..0.1 })
+    }
 
-        // Perform forward pass
+    @Test
+    fun testBiasInitialization() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        assertEquals(filters, cnnLayer.biases.size)
+        assertTrue(cnnLayer.biases.all { it == 0.01 })
+    }
+
+    @Test
+    fun testForwardPassWithValidPadding() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
         val output = cnnLayer.forward(input)
 
-        // Verify output shape (batchSize=1, outputChannels=2, height=2, width=2)
-        assertEquals(1, output.shape[0], "Batch size mismatch")
-        assertEquals(2, output.shape[1], "Output channels mismatch")
-        assertEquals(2, output.shape[2], "Output height mismatch")
-        assertEquals(2, output.shape[3], "Output width mismatch")
+        val expectedHeight = inputShape[1] - kernelSize[0] + 1
+        val expectedWidth = inputShape[2] - kernelSize[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePadding() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1]
+        val expectedWidth = inputShape[2]
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithDifferentStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3) // Input with 3 channels
+        val filters = 2
+        val kernelSize = intArrayOf(2, 2)
+        val strides = intArrayOf(2, 2)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
+        val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+
+    @Test
+    fun testForwardPassWithActivationFunction() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val activation = ReLU()
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, activation = activation)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList()) // Assuming valid padding
+        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
     }
 
     @Test
     fun testBackwardPass() {
-        // Create a CNN layer with 1 input channel, 2 output channels, and a 3x3 kernel
-        val cnnLayer = CNNLayer(
-            inputChannels = 1,
-            outputChannels = 2,
-            kernelSize = 3,
-            random = random
-        )
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
 
-        // Create a dummy input (batchSize=1, channels=1, height=4, width=4)
-        val input = mk.ndarray(
-            listOf(
-                listOf(
-                    listOf(
-                        listOf(1.0, 2.0, 3.0, 4.0),
-                        listOf(5.0, 6.0, 7.0, 8.0),
-                        listOf(9.0, 10.0, 11.0, 12.0),
-                        listOf(13.0, 14.0, 15.0, 16.0)
-                    )
-                )
-            )
-        )
-
-        // Perform forward pass
+        val input = createRandomInput(inputShape)
         val output = cnnLayer.forward(input)
 
-        // Create dummy gradients (same shape as output)
-        val dvalues = mk.ones<Double>(output.shape[0], output.shape[1], output.shape[2], output.shape[3])
-
-        // Perform backward pass
+        val dvalues = createRandomInput(output.shape)
         val dinputs = cnnLayer.backward(dvalues)
 
-        // Verify gradients for weights
-        assertNotNull(cnnLayer.dweights, "Gradients for weights should not be null")
-        assertEquals(2, cnnLayer.dweights.shape[0], "Gradients for weights: output channels mismatch")
-        assertEquals(1, cnnLayer.dweights.shape[1], "Gradients for weights: input channels mismatch")
-        assertEquals(3, cnnLayer.dweights.shape[2], "Gradients for weights: kernel height mismatch")
-        assertEquals(3, cnnLayer.dweights.shape[3], "Gradients for weights: kernel width mismatch")
-
-        // Verify gradients for biases
-        assertNotNull(cnnLayer.dbiases, "Gradients for biases should not be null")
-        assertEquals(2, cnnLayer.dbiases.size, "Gradients for biases: output channels mismatch")
-
-        // Verify gradients for inputs
-        assertNotNull(dinputs, "Gradients for inputs should not be null")
-        assertEquals(1, dinputs.shape[0], "Gradients for inputs: batch size mismatch")
-        assertEquals(1, dinputs.shape[1], "Gradients for inputs: input channels mismatch")
-        assertEquals(4, dinputs.shape[2], "Gradients for inputs: input height mismatch")
-        assertEquals(4, dinputs.shape[3], "Gradients for inputs: input width mismatch")
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(cnnLayer.dweights.shape.toList(), cnnLayer.weights.shape.toList())
+        assertEquals(cnnLayer.dbiases.size, filters)
     }
 
     @Test
-    fun testForwardPassWithActivation() {
-        // Create a CNN layer with ReLU activation
-        val cnnLayer = CNNLayer(
-            inputChannels = 1,
-            outputChannels = 2,
-            kernelSize = 3,
-            random = random,
-            activation = ReLU()
-        )
+    fun testEdgeCaseWithMinimalInput() {
+        val inputShape = intArrayOf(1, 1, 1, 1) // Minimal input
+        val filters = 1
+        val kernelSize = intArrayOf(1, 1)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
 
-        // Create a dummy input (batchSize=1, channels=1, height=4, width=4)
-        val input = mk.ndarray(
-            listOf(
-                listOf(
-                    listOf(
-                        listOf(1.0, -2.0, 3.0, -4.0),
-                        listOf(-5.0, 6.0, -7.0, 8.0),
-                        listOf(9.0, -10.0, 11.0, -12.0),
-                        listOf(-13.0, 14.0, -15.0, 16.0)
-                    )
-                )
-            )
-        )
-
-        // Perform forward pass
+        val input = createRandomInput(inputShape)
         val output = cnnLayer.forward(input)
 
-        // Verify output shape (batchSize=1, outputChannels=2, height=2, width=2)
-        assertEquals(1, output.shape[0], "Batch size mismatch")
-        assertEquals(2, output.shape[1], "Output channels mismatch")
-        assertEquals(2, output.shape[2], "Output height mismatch")
-        assertEquals(2, output.shape[3], "Output width mismatch")
-
-        // Verify ReLU activation (all values should be >= 0)
-        assertTrue(output.all { it >= 0.0 }, "ReLU activation should produce non-negative values")
-    }
-
-    @Test
-    fun testBackwardPassWithActivation() {
-        // Create a CNN layer with ReLU activation
-        val cnnLayer = CNNLayer(
-            inputChannels = 1,
-            outputChannels = 2,
-            kernelSize = 3,
-            random = random,
-            activation = ReLU()
-        )
-
-        // Create a dummy input (batchSize=1, channels=1, height=4, width=4)
-        val input = mk.ndarray(
-            listOf(
-                listOf(
-                    listOf(
-                        listOf(1.0, -2.0, 3.0, -4.0),
-                        listOf(-5.0, 6.0, -7.0, 8.0),
-                        listOf(9.0, -10.0, 11.0, -12.0),
-                        listOf(-13.0, 14.0, -15.0, 16.0)
-                    )
-                )
-            )
-        )
-
-        // Perform forward pass
-        val output = cnnLayer.forward(input)
-
-        // Create dummy gradients (same shape as output)
-        val dvalues = mk.ones<Double>(output.shape[0], output.shape[1], output.shape[2], output.shape[3])
-
-        // Perform backward pass
-        val dinputs = cnnLayer.backward(dvalues)
-
-        // Verify gradients for weights
-        assertNotNull(cnnLayer.dweights, "Gradients for weights should not be null")
-        assertEquals(2, cnnLayer.dweights.shape[0], "Gradients for weights: output channels mismatch")
-        assertEquals(1, cnnLayer.dweights.shape[1], "Gradients for weights: input channels mismatch")
-        assertEquals(3, cnnLayer.dweights.shape[2], "Gradients for weights: kernel height mismatch")
-        assertEquals(3, cnnLayer.dweights.shape[3], "Gradients for weights: kernel width mismatch")
-
-        // Verify gradients for biases
-        assertNotNull(cnnLayer.dbiases, "Gradients for biases should not be null")
-        assertEquals(2, cnnLayer.dbiases.size, "Gradients for biases: output channels mismatch")
-
-        // Verify gradients for inputs
-        assertNotNull(dinputs, "Gradients for inputs should not be null")
-        assertEquals(1, dinputs.shape[0], "Gradients for inputs: batch size mismatch")
-        assertEquals(1, dinputs.shape[1], "Gradients for inputs: input channels mismatch")
-        assertEquals(4, dinputs.shape[2], "Gradients for inputs: input height mismatch")
-        assertEquals(4, dinputs.shape[3], "Gradients for inputs: input width mismatch")
+        assertEquals(intArrayOf(1, 1, 1, filters).toList(), output.shape.toList())
     }
 }

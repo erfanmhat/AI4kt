@@ -1,9 +1,9 @@
-//package io.ai4kt.ai4kt.sklearn.svm
+package sklearn.svm
 //
-//import io.ai4kt.ai4kt.pandas.DataFrame
-//import io.ai4kt.ai4kt.fibonacci.pandas.read_csv
-//import io.ai4kt.ai4kt.fibonacci.sklearn.ensemble.RandomForestClassifier
-//import io.ai4kt.ai4kt.fibonacci.sklearn.model_selection.train_test_split
+//import pandas.DataFrame
+//import pandas.read_csv
+//import sklearn.ensemble.RandomForestClassifier
+//import sklearn.model_selection.train_test_split
 //import kotlin.math.max
 //import kotlin.random.Random
 //

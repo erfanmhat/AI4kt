@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.pandas.io.stata
+package pandas.io.stata
 
 class StataReader {
 }

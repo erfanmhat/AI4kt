@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.pandas.io.pytables
+package pandas.io.pytables
 
 class HDFStore {
 }

@@ -1,4 +1,4 @@
-package io.ai4kt.ai4kt.fibonacci.sklearn.metrics
+package sklearn.metrics
 
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
