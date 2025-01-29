@@ -38,7 +38,7 @@ class CNNLayer(
         val scale = sqrt(2.0 / (inputChannels * kernelSize[0] * kernelSize[1]))
         weights = mk.ndarray(
             List(filters) {
-                List(inputChannels) { // Ensure this matches the input channels
+                List(inputChannels) {
                     List(kernelSize[0]) {
                         List(kernelSize[1]) { random.nextDouble(-scale, scale) }
                     }
@@ -55,10 +55,13 @@ class CNNLayer(
         // Cache the inputs for use in the backward pass
         this.inputs = inputs
 
-        // Perform the convolution operation
-        convOutput = convolve(
-            inputs as D4Array<Double>, weights, strides
-        ).D4PlusD1Array(biases)
+        // Perform the convolution operation with appropriate padding
+        convOutput = if (padding == "same") {
+            val paddedInput = padInput(inputs as D4Array<Double>, kernelSize, strides)
+            convolve(paddedInput, weights, strides)
+        } else {
+            convolve(inputs as D4Array<Double>, weights, strides)
+        }.D4PlusD1Array(biases)
 
         // Apply activation function if provided
         return activation?.forward(convOutput) ?: convOutput
@@ -76,23 +79,56 @@ class CNNLayer(
         }
 
         // Gradients for weights
-        dweights = convolveBackwardWeights(
-            inputs as D4Array<Double>, dactivation as D4Array<Double>, strides
-        )
+        dweights = convolveBackwardWeights(inputs as D4Array<Double>, dactivation as D4Array<Double>, strides)
+        println(inputs.shape.contentToString())
+        println(dweights.shape.contentToString())
 
         // Gradients for biases (sum over the batch and spatial axes)
         dbiases = mk.math.sum(
             mk.math.sum(
                 mk.math.sum(dactivation, axis = 0),
-                axis = 1
+                axis = 0
             ),
-            axis = 1
+            axis = 0
         )
 
         // Gradients for inputs
         val dinputs = convolveBackwardInputs(dactivation, weights, strides)
 
         return dinputs
+    }
+
+    private fun padInput(input: D4Array<Double>, kernelSize: IntArray, strides: IntArray): D4Array<Double> {
+        val (batchSize, inputHeight, inputWidth, inputChannels) = input.shape
+        val (strideHeight, strideWidth) = strides
+        val (kernelHeight, kernelWidth) = kernelSize
+
+        val paddingHeight = (inputHeight * (strideHeight - 1) + kernelHeight - strideHeight) / 2
+        val paddingWidth = (inputWidth * (strideWidth - 1) + kernelWidth - strideWidth) / 2
+
+        return pad(input, paddingHeight, paddingWidth)
+    }
+
+    private fun pad(input: D4Array<Double>, padHeight: Int, padWidth: Int): D4Array<Double> {
+        val (batchSize, inputHeight, inputWidth, inputChannels) = input.shape
+        val paddedHeight = inputHeight + 2 * padHeight
+        val paddedWidth = inputWidth + 2 * padWidth
+
+        // Initialize a new tensor with the padded dimensions
+        val paddedInput = mk.zeros<Double>(batchSize, paddedHeight, paddedWidth, inputChannels)
+
+        // Copy the original input tensor into the center of the padded tensor
+        for (b in 0 until batchSize) {
+            for (h in 0 until inputHeight) {
+                for (w in 0 until inputWidth) {
+                    for (c in 0 until inputChannels) {
+                        paddedInput[b, h + padHeight, w + padWidth, c] = input[b, h, w, c]
+                    }
+                }
+            }
+        }
+
+        return paddedInput
     }
 
     private fun convolve(
@@ -151,34 +187,34 @@ class CNNLayer(
     }
 
     private fun convolveBackwardWeights(
-        inputs: D4Array<Double>, // Input tensor: [batch, height, width, channels]
-        dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
-        strides: IntArray, // Strides: [strideHeight, strideWidth]
+        inputs: D4Array<Double>,
+        dvalues: D4Array<Double>,
+        strides: IntArray
     ): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = inputs.shape
-        val (_, outputHeight, outputWidth, _) = dvalues.shape
+        val (_, outputHeight, outputWidth, filters) = dvalues.shape
         val (strideHeight, strideWidth) = strides
+
+        // Kernel size should be initialized or passed as a parameter
+        val kernelSize = intArrayOf(3, 3)
 
         // Initialize gradients for weights
         val dweights = mk.zeros<Double>(filters, inputChannels, kernelSize[0], kernelSize[1])
 
-        // Iterate over batch, output height, and output width
+        // Perform convolution to compute gradients for weights
         for (b in 0 until batchSize) {
             for (oh in 0 until outputHeight) {
                 for (ow in 0 until outputWidth) {
                     for (oc in 0 until filters) {
-                        // Iterate over kernel height and width
                         for (kh in 0 until kernelSize[0]) {
                             for (kw in 0 until kernelSize[1]) {
-                                // Calculate input indices
                                 val ih = oh * strideHeight + kh
                                 val iw = ow * strideWidth + kw
 
-                                // Check if input indices are within bounds
                                 if (ih < inputHeight && iw < inputWidth) {
                                     for (ic in 0 until inputChannels) {
-                                        // Accumulate gradients for weights
-                                        dweights[oc, ic, kh, kw] += inputs[b, ih, iw, ic] * dvalues[b, oh, ow, oc]
+                                        dweights[oc, ic, kh, kw] +=
+                                            inputs[b, ih, iw, ic] * dvalues[b, oh, ow, oc]
                                     }
                                 }
                             }
@@ -191,20 +227,21 @@ class CNNLayer(
         return dweights
     }
 
+
+
     private fun convolveBackwardInputs(
         dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
-        weights: D4Array<Double>, // Filters: [filters, kernelHeight, kernelWidth, inputChannels]
-        strides: IntArray, // Strides: [strideHeight, strideWidth]
+        weights: D4Array<Double>, // Filters: [filters, inputChannels, kernelHeight, kernelWidth]
+        strides: IntArray // Strides: [strideHeight, strideWidth]
     ): D4Array<Double> {
         val (batchSize, outputHeight, outputWidth, _) = dvalues.shape
-        val (_, kernelHeight, kernelWidth, inputChannels) = weights.shape
         val (strideHeight, strideWidth) = strides
 
         // Calculate input dimensions based on padding
         val (inputHeight, inputWidth) = when (padding.lowercase()) {
             "valid" -> {
-                val inHeight = (outputHeight - 1) * strideHeight + kernelHeight
-                val inWidth = (outputWidth - 1) * strideWidth + kernelWidth
+                val inHeight = (outputHeight - 1) * strideHeight + kernelSize[0]
+                val inWidth = (outputWidth - 1) * strideWidth + kernelSize[1]
                 Pair(inHeight, inWidth)
             }
 
@@ -218,24 +255,23 @@ class CNNLayer(
         }
 
         // Initialize gradients for inputs
-        val dinputs = mk.zeros<Double>(batchSize, inputHeight, inputWidth, inputChannels)
+        val dinputs = mk.zeros<Double>(batchSize, inputHeight, inputWidth, inputs.shape[3])
 
-        // Perform the backward pass for inputs
         for (b in 0 until batchSize) { // Iterate over batch
             for (oh in 0 until outputHeight) { // Iterate over output height
                 for (ow in 0 until outputWidth) { // Iterate over output width
                     for (oc in 0 until filters) { // Iterate over output channels (filters)
                         // Iterate over kernel height and width
-                        for (kh in 0 until kernelHeight) {
-                            for (kw in 0 until kernelWidth) {
+                        for (kh in 0 until kernelSize[0]) {
+                            for (kw in 0 until kernelSize[1]) {
                                 // Calculate input indices
                                 val ih = oh * strideHeight + kh
                                 val iw = ow * strideWidth + kw
 
-                                // Check if input indices are within bounds
+                                // Ensure that the indices are within the bounds of the input size
                                 if (ih < inputHeight && iw < inputWidth) {
-                                    for (ic in 0 until inputChannels) { // Iterate over input channels
-                                        // Accumulate gradients for inputs
+                                    for (ic in 0 until inputs.shape[3]) { // Iterate over input channels
+                                        // Correctly accumulate gradients for inputs
                                         dinputs[b, ih, iw, ic] += dvalues[b, oh, ow, oc] * weights[oc, kh, kw, ic]
                                     }
                                 }

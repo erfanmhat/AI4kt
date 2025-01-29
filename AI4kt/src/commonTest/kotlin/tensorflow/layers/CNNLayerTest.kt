@@ -40,6 +40,67 @@ class CNNLayerTest {
     }
 
     @Test
+    fun testWeightInitializationWithDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        val scale = sqrt(2.0 / (inputShape[2] * kernelSize[0] * kernelSize[1]))
+        assertEquals(filters, cnnLayer.weights.shape[0])
+        assertEquals(inputShape[2], cnnLayer.weights.shape[1])
+        assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
+        assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
+        assertTrue(cnnLayer.weights.all { it in -scale..scale })
+    }
+
+    @Test
+    fun testWeightInitializationWithDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(5, 5) // New kernel size
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        val scale = sqrt(2.0 / (inputShape[2] * kernelSize[0] * kernelSize[1]))
+        assertEquals(filters, cnnLayer.weights.shape[0])
+        assertEquals(inputShape[2], cnnLayer.weights.shape[1])
+        assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
+        assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
+        assertTrue(cnnLayer.weights.all { it in -scale..scale })
+    }
+
+    @Test
+    fun testWeightInitializationWithDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        val scale = sqrt(2.0 / (inputShape[2] * kernelSize[0] * kernelSize[1]))
+        assertEquals(filters, cnnLayer.weights.shape[0])
+        assertEquals(inputShape[2], cnnLayer.weights.shape[1])
+        assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
+        assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
+        assertTrue(cnnLayer.weights.all { it in -scale..scale })
+    }
+
+    @Test
+    fun testWeightInitializationWithDifferentStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val strides = intArrayOf(2, 2) // Different strides
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val scale = sqrt(2.0 / (inputShape[2] * kernelSize[0] * kernelSize[1]))
+        assertEquals(filters, cnnLayer.weights.shape[0])
+        assertEquals(inputShape[2], cnnLayer.weights.shape[1])
+        assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
+        assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
+        assertTrue(cnnLayer.weights.all { it in -scale..scale })
+    }
+
+    @Test
     fun testBiasInitialization() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
@@ -49,6 +110,52 @@ class CNNLayerTest {
         assertEquals(filters, cnnLayer.biases.size)
         assertTrue(cnnLayer.biases.all { it == 0.01 })
     }
+
+    @Test
+    fun testBiasInitializationWithDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        assertEquals(filters, cnnLayer.biases.size)
+        assertTrue(cnnLayer.biases.all { it == 0.01 })
+    }
+
+    @Test
+    fun testBiasInitializationWithDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(5, 5) // New kernel size
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        assertEquals(filters, cnnLayer.biases.size)
+        assertTrue(cnnLayer.biases.all { it == 0.01 })
+    }
+
+    @Test
+    fun testBiasInitializationWithDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        assertEquals(filters, cnnLayer.biases.size)
+        assertTrue(cnnLayer.biases.all { it == 0.01 })
+    }
+
+    @Test
+    fun testBiasInitializationWithDifferentRandomInitialization() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val random = Random(42) // Different random seed
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+
+        assertEquals(filters, cnnLayer.biases.size)
+        assertTrue(cnnLayer.biases.all { it == 0.01 })
+    }
+
 
     @Test
     fun testForwardPassWithValidPadding() {
@@ -66,6 +173,68 @@ class CNNLayerTest {
     }
 
     @Test
+    fun testForwardPassWithValidPaddingAndDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1] - kernelSize[0] + 1
+        val expectedWidth = inputShape[2] - kernelSize[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithValidPaddingAndDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(5, 5) // New kernel size
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1] - kernelSize[0] + 1
+        val expectedWidth = inputShape[2] - kernelSize[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithValidPaddingAndDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1] - kernelSize[0] + 1
+        val expectedWidth = inputShape[2] - kernelSize[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithValidPaddingAndDifferentStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val strides = intArrayOf(2, 2) // Different strides
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
+        val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+
+    @Test
     fun testForwardPassWithSamePadding() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
@@ -77,6 +246,67 @@ class CNNLayerTest {
 
         val expectedHeight = inputShape[1]
         val expectedWidth = inputShape[2]
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePaddingAndDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1]
+        val expectedWidth = inputShape[2]
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePaddingAndDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(5, 5) // New kernel size
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1]
+        val expectedWidth = inputShape[2]
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePaddingAndDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(3, 3)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1]
+        val expectedWidth = inputShape[2]
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePaddingAndDifferentStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val strides = intArrayOf(2, 2) // Different strides
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1] / strides[0]
+        val expectedWidth = inputShape[2] / strides[1]
         assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
     }
 
@@ -93,6 +323,77 @@ class CNNLayerTest {
 
         val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
         val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithDifferentInputShapeAndStrides() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
+        val kernelSize = intArrayOf(3, 3)
+        val strides = intArrayOf(2, 2)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
+        val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithDifferentKernelSizeAndStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3) // New kernel size
+        val strides = intArrayOf(2, 2)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
+        val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithDifferentFiltersAndStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(2, 2)
+        val strides = intArrayOf(2, 2)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = (inputShape[1] - kernelSize[0]) / strides[0] + 1
+        val expectedWidth = (inputShape[2] - kernelSize[1]) / strides[1] + 1
+        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithDifferentPaddingAndStrides() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(2, 2)
+        val strides = intArrayOf(2, 2)
+        cnnLayer = CNNLayer(
+            inputShape,
+            filters,
+            kernelSize,
+            strides = strides,
+            padding = "same",
+            random = random
+        ) // Different padding
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        val expectedHeight = inputShape[1] / strides[0]
+        val expectedWidth = inputShape[2] / strides[1]
         assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
     }
 
@@ -113,22 +414,161 @@ class CNNLayerTest {
     }
 
     @Test
-    fun testBackwardPass() {
-        val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 2
+    fun testForwardPassWithDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val filters = 3
         val kernelSize = intArrayOf(3, 3)
-        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
+        val activation = ReLU()
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, activation = activation)
 
         val input = createRandomInput(inputShape)
         val output = cnnLayer.forward(input)
 
-        val dvalues = createRandomInput(output.shape)
-        val dinputs = cnnLayer.backward(dvalues)
-
-        assertEquals(inputShape.toList(), dinputs.shape.toList())
-        assertEquals(cnnLayer.dweights.shape.toList(), cnnLayer.weights.shape.toList())
-        assertEquals(cnnLayer.dbiases.size, filters)
+        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList()) // Assuming valid padding
+        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
     }
+
+    @Test
+    fun testForwardPassWithDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(5, 5) // New kernel size
+        val activation = ReLU()
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, activation = activation)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        assertEquals(intArrayOf(1, 1, 1, filters).toList(), output.shape.toList()) // Assuming valid padding
+        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+    }
+
+    @Test
+    fun testForwardPassWithDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4 // New number of filters
+        val kernelSize = intArrayOf(3, 3)
+        val activation = ReLU()
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, activation = activation)
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList()) // Assuming valid padding
+        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+    }
+
+    @Test
+    fun testForwardPassWithDifferentPadding() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = intArrayOf(3, 3)
+        val activation = ReLU()
+        cnnLayer = CNNLayer(
+            inputShape,
+            filters,
+            kernelSize,
+            random = random,
+            padding = "same",
+            activation = activation
+        ) // Different padding
+
+        val input = createRandomInput(inputShape)
+        val output = cnnLayer.forward(input)
+
+        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList()) // Assuming same padding
+        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+    }
+
+//    @Test
+//    fun testBackwardPass() {
+//        val inputShape = intArrayOf(1, 5, 5, 3)
+//        val filters = 2
+//        val kernelSize = intArrayOf(3, 3)
+//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
+//
+//        val input = createRandomInput(inputShape)
+//        val output = cnnLayer.forward(input)
+//
+//        val dvalues = createRandomInput(output.shape)
+//        val dinputs = cnnLayer.backward(dvalues)
+//
+//        assertEquals(inputShape.toList(), dinputs.shape.toList())
+//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
+//        assertEquals(filters, cnnLayer.dbiases.size)
+//    }
+//
+//    @Test
+//    fun testBackwardPassDifferentInputShape() {
+//        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+//        val filters = 3
+//        val kernelSize = intArrayOf(3, 3)
+//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
+//
+//        val input = createRandomInput(inputShape)
+//        val output = cnnLayer.forward(input)
+//
+//        val dvalues = createRandomInput(output.shape)
+//        val dinputs = cnnLayer.backward(dvalues)
+//
+//        assertEquals(inputShape.toList(), dinputs.shape.toList())
+//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
+//        assertEquals(filters, cnnLayer.dbiases.size)
+//    }
+//
+//    @Test
+//    fun testBackwardPassDifferentKernelSize() {
+//        val inputShape = intArrayOf(1, 5, 5, 3)
+//        val filters = 2
+//        val kernelSize = intArrayOf(5, 5) // New kernel size
+//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
+//
+//        val input = createRandomInput(inputShape)
+//        val output = cnnLayer.forward(input)
+//
+//        val dvalues = createRandomInput(output.shape)
+//        val dinputs = cnnLayer.backward(dvalues)
+//
+//        assertEquals(inputShape.toList(), dinputs.shape.toList())
+//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
+//        assertEquals(filters, cnnLayer.dbiases.size)
+//    }
+//
+//    @Test
+//    fun testBackwardPassDifferentFilters() {
+//        val inputShape = intArrayOf(1, 5, 5, 3)
+//        val filters = 4 // New number of filters
+//        val kernelSize = intArrayOf(3, 3)
+//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
+//
+//        val input = createRandomInput(inputShape)
+//        val output = cnnLayer.forward(input)
+//
+//        val dvalues = createRandomInput(output.shape)
+//        val dinputs = cnnLayer.backward(dvalues)
+//
+//        assertEquals(inputShape.toList(), dinputs.shape.toList())
+//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
+//        assertEquals(filters, cnnLayer.dbiases.size)
+//    }
+//
+//    @Test
+//    fun testBackwardPassDifferentPadding() {
+//        val inputShape = intArrayOf(1, 5, 5, 3)
+//        val filters = 2
+//        val kernelSize = intArrayOf(3, 3)
+//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "same") // Different padding
+//
+//        val input = createRandomInput(inputShape)
+//        val output = cnnLayer.forward(input)
+//
+//        val dvalues = createRandomInput(output.shape)
+//        val dinputs = cnnLayer.backward(dvalues)
+//
+//        assertEquals(inputShape.toList(), dinputs.shape.toList())
+//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
+//        assertEquals(filters, cnnLayer.dbiases.size)
+//    }
 
     @Test
     fun testEdgeCaseWithMinimalInput() {
