@@ -3,8 +3,8 @@ package tensorflow.layers
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
-import tensorflow.activations.Activation
 import tensorflow.activations.ReLU
+import kotlin.math.sqrt
 import kotlin.test.*
 import kotlin.random.Random
 
@@ -31,11 +31,12 @@ class CNNLayerTest {
         val kernelSize = intArrayOf(3, 3)
         cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
 
+        val scale = sqrt(2.0 / (inputShape[2] * kernelSize[0] * kernelSize[1]))
         assertEquals(filters, cnnLayer.weights.shape[0])
         assertEquals(inputShape[2], cnnLayer.weights.shape[1])
         assertEquals(kernelSize[0], cnnLayer.weights.shape[2])
         assertEquals(kernelSize[1], cnnLayer.weights.shape[3])
-        assertTrue(cnnLayer.weights.all { it in -0.1..0.1 })
+        assertTrue(cnnLayer.weights.all { it in -scale..scale })
     }
 
     @Test
@@ -116,7 +117,7 @@ class CNNLayerTest {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
         val kernelSize = intArrayOf(3, 3)
-        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random)
+        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
 
         val input = createRandomInput(inputShape)
         val output = cnnLayer.forward(input)

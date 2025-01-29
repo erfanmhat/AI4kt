@@ -151,7 +151,11 @@ operator fun <E> List<E>.get(intRange: IntRange): List<E> {
 // Extension function to sum a D4Array and a D1Array (broadcasting)
 fun D4Array<Double>.D4PlusD1Array(other: D1Array<Double>): D4Array<Double> {
     // Check if the number of channels in the D4Array matches the size of the D1Array
-    require(this.shape[1] == other.size) { "D1Array size must match the number of channels in D4Array" }
+    require(this.shape[3] == other.size) {
+        "D1Array size must match the number of channels in D4Array " +
+                "D4Array.shape: ${this.shape.contentToString()} " +
+                "D1Array.shape: ${other.shape.contentToString()}"
+    }
 
     // Create a new array to store the result
     val result = mk.zeros<Double>(this.shape[0], this.shape[1], this.shape[2], this.shape[3])
@@ -161,7 +165,7 @@ fun D4Array<Double>.D4PlusD1Array(other: D1Array<Double>): D4Array<Double> {
         for (j in 0 until this.shape[1]) { // Channel dimension
             for (k in 0 until this.shape[2]) { // Height dimension
                 for (l in 0 until this.shape[3]) { // Width dimension
-                    result[i, j, k, l] = this[i, j, k, l] + other[j]
+                    result[i, j, k, l] = this[i, j, k, l] + other[l] // Corrected indexing
                 }
             }
         }
@@ -169,6 +173,7 @@ fun D4Array<Double>.D4PlusD1Array(other: D1Array<Double>): D4Array<Double> {
 
     return result
 }
+
 
 operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
     // Ensure the range is valid for the first dimension of the array
