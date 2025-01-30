@@ -55,7 +55,10 @@ fun main() {
     )
 
     // Build the deep learning model
-    val model = Sequential(random)
+    val model = Sequential(
+        batchSize = 32,
+        random = random
+    )
         .addInput(12) // 8 features in the California Housing dataset
 //        .addDense(1024, ReLU()) // Hidden layer with 100 neurons
 //        .addDense(512, ReLU()) // Hidden layer with 100 neurons
@@ -78,8 +81,7 @@ fun main() {
     model.fit(
         dataSet["X_train"] as D2Array<Double>,
         y_train.reshape(y_train.shape[0], 1),
-        epochs = 14,
-        batchSize = 32
+        epochs = 14
     )
 
     // Make predictions

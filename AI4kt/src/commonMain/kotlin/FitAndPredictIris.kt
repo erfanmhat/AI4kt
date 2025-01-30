@@ -41,7 +41,10 @@ fun main() {
     )
 
     // Build the deep learning model
-    val model = Sequential(random)
+    val model = Sequential(
+        batchSize = 32,
+        random = random
+    )
         .addInput(4) // 4 features: sepal_length, sepal_width, petal_length, petal_width
         .addDense(10, ReLU()) // Hidden layer with 10 neurons
         .addDense(10, ReLU()) // Another hidden layer
@@ -62,8 +65,7 @@ fun main() {
     model.fit(
         dataSet["X_train"] as D2Array<Double>,
         oneHot.transform(dataSet["y_train"] as D1Array<Int>),
-        epochs = 100,
-        batchSize = 32
+        epochs = 100
     )
 
     // Make predictions

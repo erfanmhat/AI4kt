@@ -29,7 +29,10 @@ fun main() {
         random_state = 42
     )
 
-    val model = Sequential(random)
+    val model = Sequential(
+        batchSize = 32,
+        random = random
+    )
         .addInput(30)
         .addDense(25, ReLU())
         .addDense(25, ReLU())
@@ -47,8 +50,7 @@ fun main() {
     model.fit(
         dataSet["X_train"] as D2Array<Double>,
         oneHot.transform(dataSet["y_train"] as D1Array<Int>),
-        epochs = 100,
-        batchSize = 32
+        epochs = 100
     )
 
 

@@ -269,7 +269,7 @@ operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
         1 -> {
             val slicedArray = mk.zeros<Double>(newShape[0])
             for (i in intRange.first..intRange.last) {
-                slicedArray[i] = (this as D1Array<Double>)[i]
+                slicedArray[i - intRange.first] = (this as D1Array<Double>)[i]
             }
             slicedArray
         }
@@ -277,8 +277,8 @@ operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
         2 -> {
             val slicedArray = mk.zeros<Double>(newShape[0], newShape[1])
             for (i in intRange.first..intRange.last) {
-                for (j in 0..this.shape[1]) {
-                    slicedArray[i, j] = (this as D2Array<Double>)[i, j]
+                for (j in 0..<this.shape[1]) {
+                    slicedArray[i - intRange.first, j] = (this as D2Array<Double>)[i, j]
                 }
             }
             slicedArray
@@ -287,9 +287,9 @@ operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
         3 -> {
             val slicedArray = mk.zeros<Double>(newShape[0], newShape[1], newShape[2])
             for (i in intRange.first..intRange.last) {
-                for (j in 0..this.shape[1]) {
-                    for (k in 0..this.shape[2]) {
-                        slicedArray[i, j, k] = (this as D3Array<Double>)[i, j, k]
+                for (j in 0..<this.shape[1]) {
+                    for (k in 0..<this.shape[2]) {
+                        slicedArray[i - intRange.first, j, k] = (this as D3Array<Double>)[i, j, k]
                     }
                 }
             }
@@ -299,10 +299,10 @@ operator fun NDArray<Double, *>.get(intRange: IntRange): NDArray<Double, *> {
         4 -> {
             val slicedArray = mk.zeros<Double>(newShape[0], newShape[1], newShape[2], newShape[3])
             for (i in intRange.first..intRange.last) {
-                for (j in 0..this.shape[1]) {
-                    for (k in 0..this.shape[2]) {
-                        for (l in 0..this.shape[3]) {
-                            slicedArray[i, j, k, l] = (this as D4Array<Double>)[i, j, k, l]
+                for (j in 0..<this.shape[1]) {
+                    for (k in 0..<this.shape[2]) {
+                        for (l in 0..<this.shape[3]) {
+                            slicedArray[i - intRange.first, j, k, l] = (this as D4Array<Double>)[i, j, k, l]
                         }
                     }
                 }

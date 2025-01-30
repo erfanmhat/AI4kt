@@ -39,7 +39,10 @@ fun main() {
     val X_train_D2 = scaler.fitTransform(X_train.getValues(Double::class))
     val X_test_D2 = scaler.transform(X_test.getValues(Double::class))
 
-    val model = Sequential(random)
+    val model = Sequential(
+        batchSize = 32,
+        random = random
+    )
         .addInput(X_train.shape[1])
         .addDense(128, ReLU()) // Hidden layer with 128 neurons
         .addDense(64, ReLU())  // Another hidden layer with 64 neurons
@@ -51,8 +54,7 @@ fun main() {
     model.fit(
         X_train_D2,
         oneHot.transform(y_train),
-        epochs = 10,
-        batchSize = 32
+        epochs = 10
     )
 
     val y_pred = model.predict(X_test_D2) as D2Array<Double>

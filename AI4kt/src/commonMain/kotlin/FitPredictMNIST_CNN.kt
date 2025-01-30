@@ -28,7 +28,10 @@ fun main() {
     X_train = X_train.map { it / 255.0 }
     X_test = X_test.map { it / 255.0 }
 
-    val model = Sequential(random)
+    val model = Sequential(
+        batchSize = 32,
+        random = random
+    )
         .addInput(28, 28)
         .add(
             Conv2D(
@@ -50,8 +53,7 @@ fun main() {
     model.fit(
         X_train,
         oneHot.transform(y_train),
-        epochs = 10,
-        batchSize = 32
+        epochs = 10
     )
 
     val y_pred = model.predict(X_test) as D2Array<Double>

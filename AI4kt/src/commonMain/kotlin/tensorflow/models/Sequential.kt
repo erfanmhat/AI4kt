@@ -15,12 +15,14 @@ import kotlin.random.Random
 import tensorflow.get
 
 class Sequential(
+    val batchSize: Int,
     var random: Random
 ) {
     val layers = mutableListOf<Layer>()
     lateinit var optimizers: MutableList<Optimizer>
     lateinit var loss: Loss
     private var epochLosses = mutableListOf<Double>()
+    var outputShape = intArrayOf()
 
     fun setRandom(random: Random): Sequential {
         this.random = random
@@ -33,10 +35,21 @@ class Sequential(
         return this
     }
 
+    fun addFlatten(): Sequential {
+        val flattenInputShape = when (val lastLayer = layers.lastOrNull()) {
+            is Input -> lastLayer.inputShape
+            is Conv2D -> lastLayer.outputShape
+            else -> throw IllegalArgumentException("Invalid layer type")
+        }
+        layers.add(Flatten(batchSize, flattenInputShape))
+        return this
+    }
+
     fun addDense(nNeurons: Int, activation: Activation? = null): Sequential {
         val nInputs = when (val lastLayer = layers.lastOrNull()) {
             is Input -> lastLayer.inputShape.last() // Last dimension of input shape
             is Dense -> lastLayer.weights.shape[1]
+            is Flatten -> lastLayer.outputShape[1]
             else -> throw IllegalArgumentException("Invalid layer type")
         }
         layers.add(Dense(nInputs, nNeurons, random, activation))
@@ -128,6 +141,7 @@ class Sequential(
 
     // Train step
     fun trainStep(inputs: NDArray<Double, *>, yTrue: D2Array<Double>) {
+        outputShape = yTrue.shape
         // Forward pass
         val output = forward(inputs)
 
@@ -154,8 +168,7 @@ class Sequential(
     fun fit(
         X: NDArray<Double, *>,
         y: D2Array<Double>,
-        epochs: Int,
-        batchSize: Int
+        epochs: Int
     ) {
         val nSamples = X.shape[0]
         for (epoch in 1..epochs) {
@@ -173,16 +186,34 @@ class Sequential(
         println()
     }
 
-    // Predict function
-    fun predict(X: NDArray<Double, *>): NDArray<Double, *> {
-        return forward(X)
+    // Predict function with batch processing
+    fun predict(
+        X: NDArray<Double, *>
+    ): NDArray<Double, *> {
+        val nSamples = X.shape[0]
+        val predictions = mk.zeros<Double>(nSamples, outputShape[1])
+
+        // Process the input in batches
+        for (startIdx in 0 until nSamples step batchSize) {
+            val endIdx = minOf(startIdx + batchSize, nSamples)
+            val XBatch = X[startIdx until endIdx]
+
+            // Perform forward pass on the batch
+            val batchPredictions = forward(XBatch)
+            for (batchIndex in 0 until endIdx - startIdx) {
+                predictions[startIdx + batchIndex] = batchPredictions[batchIndex]
+            }
+        }
+
+        // Combine all batch predictions into a single NDArray
+        return predictions
     }
 }
 
 fun main() {
     val random = Random(42)
     // Create a model using the builder pattern
-    val model = Sequential(random)
+    val model = Sequential(batchSize = 3, random = random)
         .addInput(3) // Input layer with 3 features
         .addDense(30, ReLU()) // Hidden layer with 5 neurons and ReLU activation
         .addDense(3, Softmax()) // Output layer with 2 neurons and Softmax activation
@@ -209,5 +240,5 @@ fun main() {
     )
 
 
-    model.fit(inputs, yTrue, epochs = 100, batchSize = 1)
+    model.fit(inputs, yTrue, epochs = 100)
 }

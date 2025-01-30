@@ -1,7 +1,6 @@
 package tensorflow.layers
 
 import org.jetbrains.kotlinx.multik.api.*
-import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import tensorflow.contentEquals
 import kotlin.test.*
