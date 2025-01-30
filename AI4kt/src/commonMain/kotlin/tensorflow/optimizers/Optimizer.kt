@@ -1,25 +1,25 @@
 package tensorflow.optimizers
 
-import tensorflow.layers.CNNLayer
-import tensorflow.layers.DNNLayer
+import tensorflow.layers.Conv2D
+import tensorflow.layers.Dense
 import tensorflow.layers.TrainableLayer
 
 interface Optimizer {
     fun update(layer: TrainableLayer) {
-        if (layer is DNNLayer) {
+        if (layer is Dense) {
             updateDNN(layer)
-        } else if (layer is CNNLayer) {
+        } else if (layer is Conv2D) {
             updateCNN(layer)
         } else {
             throw IllegalArgumentException("Only DNNLayer & CNNLayer is supported")
         }
     }
 
-    fun updateDNN(layer: DNNLayer) {
+    fun updateDNN(layer: Dense) {
         throw Exception("not implemented")
     }
 
-    fun updateCNN(layer: CNNLayer) {
+    fun updateCNN(layer: Conv2D) {
         throw Exception("not implemented")
     }
 

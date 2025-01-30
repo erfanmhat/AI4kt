@@ -9,7 +9,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import kotlin.math.sqrt
 import kotlin.random.Random
 
-class DNNLayer(
+class Dense(
     n_inputs: Int,
     n_neurons: Int,
     private val random: Random,
@@ -81,8 +81,8 @@ fun main() {
         ]
     )
     val random = Random(42)
-    val l1 = DNNLayer(4, 5, random)
-    val l2 = DNNLayer(5, 2, random)
+    val l1 = Dense(4, 5, random)
+    val l2 = Dense(5, 2, random)
     val l1_out = l1.forward(X)
     val l2_out = l2.forward(l1_out)
     println(l1_out)

@@ -6,7 +6,7 @@ import tensorflow.activations.ReLU
 import tensorflow.activations.Softmax
 import tensorflow.argmax
 import tensorflow.loss.LossCategoricalCrossentropy
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
@@ -39,11 +39,11 @@ fun main() {
     val X_train_D2 = scaler.fitTransform(X_train.getValues(Double::class))
     val X_test_D2 = scaler.transform(X_test.getValues(Double::class))
 
-    val model = DeepLearningModel(random)
-        .addInputLayer(X_train.shape[1])
-        .addDenseLayer(128, ReLU()) // Hidden layer with 128 neurons
-        .addDenseLayer(64, ReLU())  // Another hidden layer with 64 neurons
-        .addDenseLayer(10, Softmax()) // Output layer with 10 classes (digits 0-9)
+    val model = Sequential(random)
+        .addInput(X_train.shape[1])
+        .addDense(128, ReLU()) // Hidden layer with 128 neurons
+        .addDense(64, ReLU())  // Another hidden layer with 64 neurons
+        .addDense(10, Softmax()) // Output layer with 10 classes (digits 0-9)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossCategoricalCrossentropy()) // Loss function for multiclass classification
         .build()

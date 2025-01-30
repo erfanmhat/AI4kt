@@ -140,6 +140,84 @@ fun D2Array<Double>.argmax(axis: Int? = null): Any {
     }
 }
 
+/**
+ * Finds the 2D indices (row, column) of the maximum value in a 2D array.
+ *
+ * @param array The 2D array to search.
+ * @return A Pair containing the row and column indices of the maximum value.
+ */
+fun findMaxIndex(array: D2Array<Double>): Pair<Int, Int> {
+    var maxValue = array[0, 0]
+    var maxRow = 0
+    var maxCol = 0
+
+    // Iterate through the array to find the maximum value and its indices
+    for (i in 0 until array.shape[0]) {
+        for (j in 0 until array.shape[1]) {
+            if (array[i, j] > maxValue) {
+                maxValue = array[i, j]
+                maxRow = i
+                maxCol = j
+            }
+        }
+    }
+
+    return Pair(maxRow, maxCol)
+}
+
+/**
+ * Compares two NDArrays for equality by checking their shapes and content.
+ *
+ * @param other The NDArray to compare with.
+ * @return `true` if the shapes and content are equal, `false` otherwise.
+ */
+fun <T : Number> NDArray<T, *>.contentEquals(other: NDArray<T, *>): Boolean {
+    // Check if shapes are equal
+    if (!this.shape.contentEquals(other.shape)) {
+        return false
+    }
+
+    when (this.shape.size) {
+        1 -> for (i in 0..<this.shape[0]) {
+            if ((this as D1Array<T>)[i] != (other as D1Array<T>)[i]) {
+                return false
+            }
+        }
+
+        2 -> for (i in 0..<this.shape[0]) {
+            for (j in 0..<this.shape[1]) {
+                if ((this as D2Array<T>)[i, j] != (other as D2Array<T>)[i, j]) {
+                    return false
+                }
+            }
+        }
+
+        3 -> for (i in 0..<this.shape[0]) {
+            for (j in 0..<this.shape[1]) {
+                for (k in 0..<this.shape[2]) {
+                    if ((this as D3Array<T>)[i, j, k] != (other as D3Array<T>)[i, j, k]) {
+                        return false
+                    }
+                }
+            }
+        }
+
+        4 -> for (i in 0..<this.shape[0]) {
+            for (j in 0..<this.shape[1]) {
+                for (k in 0..<this.shape[2]) {
+                    for (l in 0..<this.shape[3]) {
+                        if ((this as D4Array<T>)[i, j, k, l] != (other as D4Array<T>)[i, j, k, l]) {
+                            return false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true
+}
+
 operator fun <E> List<E>.get(intRange: IntRange): List<E> {
     val result = mutableListOf<E>()
     for (index in intRange) {

@@ -1,12 +1,12 @@
 package tensorflow.models
 
+import org.jetbrains.kotlinx.multik.api.*
+import org.jetbrains.kotlinx.multik.ndarray.data.*
+import org.jetbrains.kotlinx.multik.api.ndarray
 import tensorflow.activations.Activation
 import tensorflow.layers.*
 import tensorflow.loss.Loss
 import tensorflow.optimizers.Optimizer
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.ndarray.data.*
 import tensorflow.activations.ReLU
 import tensorflow.activations.Softmax
 import tensorflow.loss.LossCategoricalCrossentropy
@@ -14,7 +14,7 @@ import tensorflow.optimizers.GradientDescentOptimizer
 import kotlin.random.Random
 import tensorflow.get
 
-class DeepLearningModel(
+class Sequential(
     var random: Random
 ) {
     val layers = mutableListOf<Layer>()
@@ -22,33 +22,73 @@ class DeepLearningModel(
     lateinit var loss: Loss
     private var epochLosses = mutableListOf<Double>()
 
-    fun setRandom(random: Random): DeepLearningModel {
+    fun setRandom(random: Random): Sequential {
         this.random = random
         return this
     }
 
     // Builder methods
-    fun addInputLayer(vararg inputShape: Int): DeepLearningModel {
-        layers.add(InputLayer(*inputShape))
+    fun addInput(vararg inputShape: Int): Sequential {
+        layers.add(Input(*inputShape))
         return this
     }
 
-    fun addDenseLayer(nNeurons: Int, activation: Activation? = null): DeepLearningModel {
+    fun addDense(nNeurons: Int, activation: Activation? = null): Sequential {
         val nInputs = when (val lastLayer = layers.lastOrNull()) {
-            is InputLayer -> lastLayer.inputShape.last() // Last dimension of input shape
-            is DNNLayer -> lastLayer.weights.shape[1]
+            is Input -> lastLayer.inputShape.last() // Last dimension of input shape
+            is Dense -> lastLayer.weights.shape[1]
             else -> throw IllegalArgumentException("Invalid layer type")
         }
-        layers.add(DNNLayer(nInputs, nNeurons, random, activation))
+        layers.add(Dense(nInputs, nNeurons, random, activation))
         return this
     }
 
-    fun addLayer(layer: Layer): DeepLearningModel {
+    // Add a Convolutional Layer
+    fun addConv2D(
+        filters: Int,
+        kernelSize: Pair<Int, Int>,
+        padding: String = "valid",
+        activation: Activation? = ReLU()
+    ): Sequential {
+        val inputShape = when (val lastLayer = layers.lastOrNull()) {
+            is Input -> lastLayer.inputShape
+            is Conv2D -> lastLayer.outputShape
+            else -> throw IllegalArgumentException("Invalid layer type")
+        }
+        layers.add(
+            Conv2D(
+                filters = filters,
+                kernelSize = kernelSize,
+                padding = padding,
+                activation = activation,
+                inputShape = inputShape,
+                random = random
+            )
+        )
+        return this
+    }
+
+    // Add a Max Pooling Layer
+    fun addMaxPooling2D(
+        poolSize: Pair<Int, Int> = Pair(2, 2),
+        strides: Pair<Int, Int> = Pair(2, 2),
+        padding: String = "valid"
+    ): Sequential {
+        val inputShape = when (val lastLayer = layers.lastOrNull()) {
+            is Input -> lastLayer.inputShape
+            is Conv2D -> lastLayer.outputShape
+            else -> throw IllegalArgumentException("Invalid layer type")
+        }
+        layers.add(MaxPooling2D(poolSize, strides, padding, inputShape))
+        return this
+    }
+
+    fun add(layer: Layer): Sequential {
         layers.add(layer)
         return this
     }
 
-    fun setOptimizer(optimizer: Optimizer): DeepLearningModel {
+    fun setOptimizer(optimizer: Optimizer): Sequential {
         optimizers = mutableListOf()
         for (layer in layers) {
             this.optimizers.add(optimizer.copy())
@@ -56,12 +96,12 @@ class DeepLearningModel(
         return this
     }
 
-    fun setLossFunction(loss: Loss): DeepLearningModel {
+    fun setLossFunction(loss: Loss): Sequential {
         this.loss = loss
         return this
     }
 
-    fun build(): DeepLearningModel {
+    fun build(): Sequential {
         return this
     }
 
@@ -80,7 +120,9 @@ class DeepLearningModel(
 
         // Iterate through layers in reverse order
         for (layer in layers.reversed()) {
-            grad = layer.backward(grad)
+            if (layer !is Input) {
+                grad = layer.backward(grad)
+            }
         }
     }
 
@@ -140,10 +182,10 @@ class DeepLearningModel(
 fun main() {
     val random = Random(42)
     // Create a model using the builder pattern
-    val model = DeepLearningModel(random)
-        .addInputLayer(3) // Input layer with 3 features
-        .addDenseLayer(30, ReLU()) // Hidden layer with 5 neurons and ReLU activation
-        .addDenseLayer(3, Softmax()) // Output layer with 2 neurons and Softmax activation
+    val model = Sequential(random)
+        .addInput(3) // Input layer with 3 features
+        .addDense(30, ReLU()) // Hidden layer with 5 neurons and ReLU activation
+        .addDense(3, Softmax()) // Output layer with 2 neurons and Softmax activation
         .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
         .setLossFunction(LossCategoricalCrossentropy()) // Set loss function
         .build()

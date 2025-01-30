@@ -4,14 +4,14 @@ import tensorflow.activations.ReLU
 import tensorflow.activations.Softmax
 import tensorflow.argmax
 import tensorflow.loss.LossCategoricalCrossentropy
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
-import tensorflow.layers.CNNLayer
+import tensorflow.layers.Conv2D
 import kotlin.random.Random
 
 fun main() {
@@ -28,21 +28,21 @@ fun main() {
     X_train = X_train.map { it / 255.0 }
     X_test = X_test.map { it / 255.0 }
 
-    val model = DeepLearningModel(random)
-        .addInputLayer(28, 28)
-        .addLayer(
-            CNNLayer(
+    val model = Sequential(random)
+        .addInput(28, 28)
+        .add(
+            Conv2D(
                 inputShape = intArrayOf(28, 28, 1), // Input shape: 28x28 images with 1 channel (grayscale)
                 filters = 32, // Number of filters
-                kernelSize = intArrayOf(3, 3), // Kernel size: 3x3
+                kernelSize = Pair(3, 3), // Kernel size: 3x3
                 strides = intArrayOf(1, 1), // Strides: 1x1
                 padding = "same", // Padding: "same" to preserve spatial dimensions
                 random = random,
                 activation = ReLU()
             )
         ) // Hidden layer with 128 neurons
-        .addDenseLayer(64, ReLU())  // Another hidden layer with 64 neurons
-        .addDenseLayer(10, Softmax()) // Output layer with 10 classes (digits 0-9)
+        .addDense(64, ReLU())  // Another hidden layer with 64 neurons
+        .addDense(10, Softmax()) // Output layer with 10 classes (digits 0-9)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossCategoricalCrossentropy()) // Loss function for multiclass classification
         .build()

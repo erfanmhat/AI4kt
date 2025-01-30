@@ -7,7 +7,7 @@ import sklearn.model_selection.train_test_split
 import tensorflow.OneHotEncodingSeries
 import tensorflow.activations.ReLU
 import tensorflow.loss.LossMeanSquaredError
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import pandas.asDataFrame
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
@@ -55,15 +55,15 @@ fun main() {
     )
 
     // Build the deep learning model
-    val model = DeepLearningModel(random)
-        .addInputLayer(12) // 8 features in the California Housing dataset
-//        .addDenseLayer(1024, ReLU()) // Hidden layer with 100 neurons
-//        .addDenseLayer(512, ReLU()) // Hidden layer with 100 neurons
-//        .addDenseLayer(256, ReLU()) // Hidden layer with 100 neurons
-//        .addDenseLayer(128, ReLU()) // Hidden layer with 100 neurons
-        .addDenseLayer(64, ReLU()) // Another hidden layer
-        .addDenseLayer(32, ReLU()) // Another hidden layer
-        .addDenseLayer(1) // Output layer with 1 neuron (regression task)
+    val model = Sequential(random)
+        .addInput(12) // 8 features in the California Housing dataset
+//        .addDense(1024, ReLU()) // Hidden layer with 100 neurons
+//        .addDense(512, ReLU()) // Hidden layer with 100 neurons
+//        .addDense(256, ReLU()) // Hidden layer with 100 neurons
+//        .addDense(128, ReLU()) // Hidden layer with 100 neurons
+        .addDense(64, ReLU()) // Another hidden layer
+        .addDense(32, ReLU()) // Another hidden layer
+        .addDense(1) // Output layer with 1 neuron (regression task)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossMeanSquaredError()) // Loss function for regression
         .build()

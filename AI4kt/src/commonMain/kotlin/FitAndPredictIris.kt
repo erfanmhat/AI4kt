@@ -8,7 +8,7 @@ import tensorflow.activations.ReLU
 import tensorflow.activations.Softmax
 import tensorflow.argmax
 import tensorflow.loss.LossCategoricalCrossentropy
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
@@ -41,11 +41,11 @@ fun main() {
     )
 
     // Build the deep learning model
-    val model = DeepLearningModel(random)
-        .addInputLayer(4) // 4 features: sepal_length, sepal_width, petal_length, petal_width
-        .addDenseLayer(10, ReLU()) // Hidden layer with 10 neurons
-        .addDenseLayer(10, ReLU()) // Another hidden layer
-        .addDenseLayer(3, Softmax()) // Output layer with 3 classes (Iris species)
+    val model = Sequential(random)
+        .addInput(4) // 4 features: sepal_length, sepal_width, petal_length, petal_width
+        .addDense(10, ReLU()) // Hidden layer with 10 neurons
+        .addDense(10, ReLU()) // Another hidden layer
+        .addDense(3, Softmax()) // Output layer with 3 classes (Iris species)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossCategoricalCrossentropy()) // Loss function for multiclass classification
         .build()

@@ -5,7 +5,7 @@ import sklearn.metrics.mean_squared_error
 import sklearn.model_selection.train_test_split
 import tensorflow.activations.ReLU
 import tensorflow.loss.LossMeanSquaredError
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
@@ -31,12 +31,12 @@ fun main() {
     )
 
     // Build the deep learning model
-    val model = DeepLearningModel(random)
-        .addInputLayer(13) // 13 features in the Boston Housing dataset
-        .addDenseLayer(100, ReLU()) // Hidden layer with 10 neurons
-        .addDenseLayer(50, ReLU()) // Another hidden layer
-        .addDenseLayer(20, ReLU()) // Another hidden layer
-        .addDenseLayer(1) // Output layer with 1 neuron (regression task)
+    val model = Sequential(random)
+        .addInput(13) // 13 features in the Boston Housing dataset
+        .addDense(100, ReLU()) // Hidden layer with 10 neurons
+        .addDense(50, ReLU()) // Another hidden layer
+        .addDense(20, ReLU()) // Another hidden layer
+        .addDense(1) // Output layer with 1 neuron (regression task)
         .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
         .setLossFunction(LossMeanSquaredError()) // Loss function for regression
         .build()

@@ -1,13 +1,12 @@
 package tensorflow.optimizers
 
-import tensorflow.layers.DNNLayer
+import tensorflow.layers.Dense
 import org.jetbrains.kotlinx.multik.ndarray.operations.minus
 import org.jetbrains.kotlinx.multik.ndarray.operations.times
-import tensorflow.layers.CNNLayer
-import tensorflow.layers.TrainableLayer
+import tensorflow.layers.Conv2D
 
 class GradientDescentOptimizer(val learningRate: Double) : Optimizer {
-    override fun updateDNN(layer: DNNLayer) {
+    override fun updateDNN(layer: Dense) {
         // Update weights
         layer.weights -= layer.dweights * learningRate
 
@@ -15,7 +14,7 @@ class GradientDescentOptimizer(val learningRate: Double) : Optimizer {
         layer.biases -= layer.dbiases * learningRate
     }
 
-    override fun updateCNN(layer: CNNLayer) {
+    override fun updateCNN(layer: Conv2D) {
         TODO()
     }
 

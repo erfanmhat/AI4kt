@@ -2,12 +2,15 @@ package tensorflow.layers
 
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 
-class InputLayer(vararg inputShape: Int) : Layer {
+class Input(vararg inputShape: Int) : Layer {
     val inputShape: IntArray = inputShape
 
     // The forward pass simply returns the input as-is
     override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
-        require(inputs.shape.contentEquals(inputShape)) {
+        require(
+            inputs.shape.toList().subList(1, inputs.shape.size) ==
+                    inputShape.toList()
+        ) {
             "Input shape mismatch. Expected ${inputShape.joinToString(", ")}, but got ${inputs.shape.joinToString(", ")}."
         }
         return inputs

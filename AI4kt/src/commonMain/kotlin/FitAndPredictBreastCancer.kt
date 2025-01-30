@@ -8,7 +8,7 @@ import tensorflow.activations.ReLU
 import tensorflow.activations.Softmax
 import tensorflow.argmax
 import tensorflow.loss.LossCategoricalCrossentropy
-import tensorflow.models.DeepLearningModel
+import tensorflow.models.Sequential
 import tensorflow.optimizers.AdamOptimizer
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
@@ -29,12 +29,12 @@ fun main() {
         random_state = 42
     )
 
-    val model = DeepLearningModel(random)
-        .addInputLayer(30)
-        .addDenseLayer(25, ReLU())
-        .addDenseLayer(25, ReLU())
-        .addDenseLayer(25, ReLU())
-        .addDenseLayer(2, Softmax())
+    val model = Sequential(random)
+        .addInput(30)
+        .addDense(25, ReLU())
+        .addDense(25, ReLU())
+        .addDense(25, ReLU())
+        .addDense(2, Softmax())
         .setOptimizer(AdamOptimizer(0.001))
 //        .setOptimizer(GradientDescentOptimizer(0.001))
         .setLossFunction(LossCategoricalCrossentropy())

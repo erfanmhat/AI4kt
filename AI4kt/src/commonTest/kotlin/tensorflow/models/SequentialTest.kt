@@ -10,7 +10,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class DeepLearningModelTest {
+class SequentialTest {
 
     private val random = Random(42)
 
@@ -19,10 +19,10 @@ class DeepLearningModelTest {
     @Test
     fun testForwardPass() {
         // Create a model
-        val model = DeepLearningModel(random)
-            .addInputLayer(3) // Input layer with 3 features
-            .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
-            .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
+        val model = Sequential(random)
+            .addInput(3) // Input layer with 3 features
+            .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
+            .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()
@@ -45,10 +45,10 @@ class DeepLearningModelTest {
     @Test
     fun testBackwardPass() {
         // Create a model
-        val model = DeepLearningModel(random)
-            .addInputLayer(3) // Input layer with 3 features
-            .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
-            .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
+        val model = Sequential(random)
+            .addInput(3) // Input layer with 3 features
+            .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
+            .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()
@@ -84,10 +84,10 @@ class DeepLearningModelTest {
     @Test
     fun testTrainStep() {
         // Create a model
-        val model = DeepLearningModel(random)
-            .addInputLayer(3) // Input layer with 3 features
-            .addDenseLayer(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
-            .addDenseLayer(2, Softmax()) // Output layer with 2 neurons and Softmax activation
+        val model = Sequential(random)
+            .addInput(3) // Input layer with 3 features
+            .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
+            .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation
             .setOptimizer(GradientDescentOptimizer(0.001)) // Set optimizer with learning rate 0.01
             .setLossFunction(LossBinaryCrossentropy()) // Set loss function
             .build()

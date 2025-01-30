@@ -8,7 +8,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class DNNLayerTest {
+class DenseTest {
 
     private val mk = Multik
     private val random = Random(42)
@@ -16,7 +16,7 @@ class DNNLayerTest {
     @Test
     fun testForwardPassWithoutActivation() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and no activation function
-        val layer = DNNLayer(3, 5, random)
+        val layer = Dense(3, 5, random)
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -36,7 +36,7 @@ class DNNLayerTest {
     @Test
     fun testForwardPassWithReLU() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and ReLU activation
-        val layer = DNNLayer(3, 5, random, ReLU())
+        val layer = Dense(3, 5, random, ReLU())
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -59,7 +59,7 @@ class DNNLayerTest {
     @Test
     fun testBackwardPassWithoutActivation() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and no activation function
-        val layer = DNNLayer(3, 5, random)
+        val layer = Dense(3, 5, random)
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(
@@ -90,7 +90,7 @@ class DNNLayerTest {
     @Test
     fun testBackwardPassWithReLU() {
         // Create a DNNLayer with 3 inputs, 5 neurons, and ReLU activation
-        val layer = DNNLayer(3, 5, random, ReLU())
+        val layer = Dense(3, 5, random, ReLU())
 
         // Example input data (2 samples, 3 features each)
         val inputs: D2Array<Double> = mk.ndarray(

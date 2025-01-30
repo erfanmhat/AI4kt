@@ -6,12 +6,13 @@ import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
 import kotlin.math.sqrt
+import kotlin.math.ceil
 import kotlin.random.Random
 
-class CNNLayer(
+class Conv2D(
     inputShape: IntArray, // Input shape: [height, width, channels]
     private val filters: Int, // Number of filters (output channels)
-    private val kernelSize: IntArray, // Kernel size: [height, width]
+    private val kernelSize: Pair<Int, Int>, // Kernel size: [height, width]
     private val strides: IntArray = intArrayOf(1, 1), // Strides: [height, width]
     private val padding: String = "valid", // Padding: "valid" or "same"
     private val random: Random,
@@ -21,11 +22,11 @@ class CNNLayer(
     private val inputChannels: Int = inputShape[2] // Number of input channels
 
     // Weights and biases for the convolutional layer
-    var weights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize[0], kernelSize[1])
+    var weights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize.first, kernelSize.second)
     var biases: D1Array<Double> = mk.zeros<Double>(filters)
 
     // Gradients for weights and biases
-    var dweights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize[0], kernelSize[1])
+    var dweights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize.first, kernelSize.second)
     var dbiases: D1Array<Double> = mk.zeros<Double>(filters)
 
     // Cache for inputs during forward pass (used in backward pass)
@@ -33,14 +34,19 @@ class CNNLayer(
 
     private lateinit var convOutput: D4Array<Double>
 
+    val outputShape: IntArray
+        get() {
+            TODO()
+        }
+
     init {
         // He initialization for weights
-        val scale = sqrt(2.0 / (inputChannels * kernelSize[0] * kernelSize[1]))
+        val scale = sqrt(2.0 / (inputChannels * kernelSize.first * kernelSize.second))
         weights = mk.ndarray(
             List(filters) {
                 List(inputChannels) {
-                    List(kernelSize[0]) {
-                        List(kernelSize[1]) { random.nextDouble(-scale, scale) }
+                    List(kernelSize.first) {
+                        List(kernelSize.second) { random.nextDouble(-scale, scale) }
                     }
                 }
             }
@@ -98,13 +104,13 @@ class CNNLayer(
         return dinputs
     }
 
-    private fun padInput(input: D4Array<Double>, kernelSize: IntArray, strides: IntArray): D4Array<Double> {
+    private fun padInput(input: D4Array<Double>, kernelSize: Pair<Int, Int>, strides: IntArray): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = input.shape
         val (strideHeight, strideWidth) = strides
         val (kernelHeight, kernelWidth) = kernelSize
 
-        val paddingHeight = (inputHeight * (strideHeight - 1) + kernelHeight - strideHeight) / 2
-        val paddingWidth = (inputWidth * (strideWidth - 1) + kernelWidth - strideWidth) / 2
+        val paddingHeight = ceil(((inputHeight - 1) * strideHeight + kernelHeight - inputHeight).toDouble() / 2).toInt()
+        val paddingWidth = ceil(((inputWidth - 1) * strideWidth + kernelWidth - inputWidth).toDouble() / 2).toInt()
 
         return pad(input, paddingHeight, paddingWidth)
     }
@@ -228,7 +234,6 @@ class CNNLayer(
     }
 
 
-
     private fun convolveBackwardInputs(
         dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
         weights: D4Array<Double>, // Filters: [filters, inputChannels, kernelHeight, kernelWidth]
@@ -240,8 +245,8 @@ class CNNLayer(
         // Calculate input dimensions based on padding
         val (inputHeight, inputWidth) = when (padding.lowercase()) {
             "valid" -> {
-                val inHeight = (outputHeight - 1) * strideHeight + kernelSize[0]
-                val inWidth = (outputWidth - 1) * strideWidth + kernelSize[1]
+                val inHeight = (outputHeight - 1) * strideHeight + kernelSize.first
+                val inWidth = (outputWidth - 1) * strideWidth + kernelSize.second
                 Pair(inHeight, inWidth)
             }
 
@@ -262,8 +267,8 @@ class CNNLayer(
                 for (ow in 0 until outputWidth) { // Iterate over output width
                     for (oc in 0 until filters) { // Iterate over output channels (filters)
                         // Iterate over kernel height and width
-                        for (kh in 0 until kernelSize[0]) {
-                            for (kw in 0 until kernelSize[1]) {
+                        for (kh in 0 until kernelSize.first) {
+                            for (kw in 0 until kernelSize.second) {
                                 // Calculate input indices
                                 val ih = oh * strideHeight + kh
                                 val iw = ow * strideWidth + kw
