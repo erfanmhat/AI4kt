@@ -10,11 +10,12 @@ import kotlin.math.ceil
 import kotlin.random.Random
 
 class Conv2D(
-    inputShape: IntArray, // Input shape: [height, width, channels]
+    val inputShape: IntArray, // Input shape: [height, width, channels]
     private val filters: Int, // Number of filters (output channels)
     private val kernelSize: Pair<Int, Int>, // Kernel size: [height, width]
     private val strides: IntArray = intArrayOf(1, 1), // Strides: [height, width]
     private val padding: String = "valid", // Padding: "valid" or "same"
+    private val dilationRate: IntArray = intArrayOf(1, 1), // Dilation rate: [height, width]
     private val random: Random,
     private val activation: Activation? = null
 ) : TrainableLayer {
@@ -36,7 +37,30 @@ class Conv2D(
 
     val outputShape: IntArray
         get() {
-            TODO()
+            val (inputHeight, inputWidth, _) = inputShape
+            val (kernelHeight, kernelWidth) = kernelSize
+            val (strideHeight, strideWidth) = strides
+            val dilationHeight = dilationRate[0]
+            val dilationWidth = dilationRate[1]
+
+            // Calculate effective kernel size considering dilation
+            val effectiveKernelHeight = kernelHeight + (kernelHeight - 1) * (dilationHeight - 1)
+            val effectiveKernelWidth = kernelWidth + (kernelWidth - 1) * (dilationWidth - 1)
+
+            // Calculate output height and width based on padding
+            val outputHeight = when (padding.lowercase()) {
+                "same" -> ceil(inputHeight.toDouble() / strideHeight).toInt()
+                "valid" -> ceil((inputHeight - effectiveKernelHeight + 1).toDouble() / strideHeight).toInt()
+                else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
+            }
+
+            val outputWidth = when (padding.lowercase()) {
+                "same" -> ceil(inputWidth.toDouble() / strideWidth).toInt()
+                "valid" -> ceil((inputWidth - effectiveKernelWidth + 1).toDouble() / strideWidth).toInt()
+                else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
+            }
+
+            return intArrayOf(outputHeight, outputWidth, filters)
         }
 
     init {
@@ -68,7 +92,6 @@ class Conv2D(
         } else {
             convolve(inputs as D4Array<Double>, weights, strides)
         }.D4PlusD1Array(biases)
-
         // Apply activation function if provided
         return activation?.forward(convOutput) ?: convOutput
     }
@@ -86,8 +109,6 @@ class Conv2D(
 
         // Gradients for weights
         dweights = convolveBackwardWeights(inputs as D4Array<Double>, dactivation as D4Array<Double>, strides)
-        println(inputs.shape.contentToString())
-        println(dweights.shape.contentToString())
 
         // Gradients for biases (sum over the batch and spatial axes)
         dbiases = mk.math.sum(
@@ -109,26 +130,44 @@ class Conv2D(
         val (strideHeight, strideWidth) = strides
         val (kernelHeight, kernelWidth) = kernelSize
 
-        val paddingHeight = ceil(((inputHeight - 1) * strideHeight + kernelHeight - inputHeight).toDouble() / 2).toInt()
-        val paddingWidth = ceil(((inputWidth - 1) * strideWidth + kernelWidth - inputWidth).toDouble() / 2).toInt()
+        // Calculate output dimensions for "same" padding
+        val outputHeight = ceil(inputHeight.toDouble() / strideHeight).toInt()
+        val outputWidth = ceil(inputWidth.toDouble() / strideWidth).toInt()
 
-        return pad(input, paddingHeight, paddingWidth)
+        // Calculate total padding required
+        val totalPadHeight = ((outputHeight - 1) * strideHeight + kernelHeight - inputHeight).coerceAtLeast(0)
+        val totalPadWidth = ((outputWidth - 1) * strideWidth + kernelWidth - inputWidth).coerceAtLeast(0)
+
+        // Split total padding into start and end (asymmetric if needed)
+        val padTop = totalPadHeight / 2
+        val padBottom = totalPadHeight - padTop
+        val padLeft = totalPadWidth / 2
+        val padRight = totalPadWidth - padLeft
+
+        // Apply asymmetric padding
+        return pad(input, padTop, padBottom, padLeft, padRight)
     }
 
-    private fun pad(input: D4Array<Double>, padHeight: Int, padWidth: Int): D4Array<Double> {
+    private fun pad(
+        input: D4Array<Double>,
+        padTop: Int,
+        padBottom: Int,
+        padLeft: Int,
+        padRight: Int
+    ): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = input.shape
-        val paddedHeight = inputHeight + 2 * padHeight
-        val paddedWidth = inputWidth + 2 * padWidth
+        val paddedHeight = inputHeight + padTop + padBottom
+        val paddedWidth = inputWidth + padLeft + padRight
 
         // Initialize a new tensor with the padded dimensions
         val paddedInput = mk.zeros<Double>(batchSize, paddedHeight, paddedWidth, inputChannels)
 
-        // Copy the original input tensor into the center of the padded tensor
+        // Copy the original input tensor into the padded tensor
         for (b in 0 until batchSize) {
             for (h in 0 until inputHeight) {
                 for (w in 0 until inputWidth) {
                     for (c in 0 until inputChannels) {
-                        paddedInput[b, h + padHeight, w + padWidth, c] = input[b, h, w, c]
+                        paddedInput[b, h + padTop, w + padLeft, c] = input[b, h, w, c]
                     }
                 }
             }
@@ -143,25 +182,12 @@ class Conv2D(
         strides: IntArray, // Strides: [strideHeight, strideWidth]
     ): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = inputs.shape
-        val (_, _, kernelHeight, kernelWidth) = weights.shape
+        val (filters, _, kernelHeight, kernelWidth) = weights.shape
         val (strideHeight, strideWidth) = strides
 
-        // Calculate output dimensions based on padding
-        val (outputHeight, outputWidth) = when (padding.lowercase()) {
-            "valid" -> {
-                val outHeight = (inputHeight - kernelHeight) / strideHeight + 1
-                val outWidth = (inputWidth - kernelWidth) / strideWidth + 1
-                Pair(outHeight, outWidth)
-            }
-
-            "same" -> {
-                val outHeight = (inputHeight + strideHeight - 1) / strideHeight
-                val outWidth = (inputWidth + strideWidth - 1) / strideWidth
-                Pair(outHeight, outWidth)
-            }
-
-            else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
-        }
+        // Calculate output dimensions (no padding logic here)
+        val outputHeight = (inputHeight - kernelHeight) / strideHeight + 1
+        val outputWidth = (inputWidth - kernelWidth) / strideWidth + 1
 
         // Initialize output tensor
         val output = mk.zeros<Double>(batchSize, outputHeight, outputWidth, filters)
@@ -234,7 +260,7 @@ class Conv2D(
     }
 
 
-    private fun convolveBackwardInputs(
+    fun convolveBackwardInputs(
         dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
         weights: D4Array<Double>, // Filters: [filters, inputChannels, kernelHeight, kernelWidth]
         strides: IntArray // Strides: [strideHeight, strideWidth]

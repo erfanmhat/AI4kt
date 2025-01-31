@@ -27,10 +27,20 @@ class Flatten(
             inputs.reshape(batchSize, flattenedSize)
         } catch (e: Exception) {
             try {
-                inputs.reshape(inputs.size / flattenedSize, flattenedSize)
+                if (inputs.size / flattenedSize < batchSize) {
+                    inputs.reshape(inputs.size / flattenedSize, flattenedSize)
+                } else {
+                    throw Exception(
+                        "can not reshape inputs with shape: ${inputs.shape.contentToString()} " +
+                                "to shape: [$batchSize, $flattenedSize]"
+                    )
+                }
             } catch (e: Exception) {
-                throw Exception("can not reshape inputs to: ($batchSize, $flattenedSize) or " +
-                        "(${inputs.size / flattenedSize},$flattenedSize)")
+                throw Exception(
+                    "can not reshape inputs with shape: ${inputs.shape.contentToString()} " +
+                            "to shape: [$batchSize, $flattenedSize] or " +
+                            "[${inputs.size / flattenedSize},$flattenedSize]"
+                )
             }
         }
     }

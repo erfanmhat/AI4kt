@@ -7,8 +7,6 @@ import kotlin.test.assertEquals
 class FlattenTest {
     @Test
     fun testForward() {
-        val flatten = Flatten()
-
         // Create a 3D input array with shape (2, 3, 4)
         val input = mk.ndarray(
             mk[
@@ -23,6 +21,8 @@ class FlattenTest {
                 ]
             ]
         )
+        val flatten =
+            Flatten(batchSize = 2, inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
 
         // Expected output shape after flattening
         val expectedOutputShape = intArrayOf(2, 12)
@@ -36,8 +36,6 @@ class FlattenTest {
 
     @Test
     fun testBackward() {
-        val flatten = Flatten()
-
         // Create a 3D input array with shape (2, 3, 4)
         val input = mk.ndarray(
             mk[
@@ -52,6 +50,8 @@ class FlattenTest {
                 ]
             ]
         )
+        val flatten =
+            Flatten(batchSize = 2, inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
 
         // Perform the forward pass to set the input shape
         flatten.forward(input)

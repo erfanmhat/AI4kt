@@ -20,43 +20,47 @@ fun main() {
     val y_trainPath = "D:\\repo\\AI4kt\\data\\classification\\MNIST\\train-labels.idx1-ubyte"
     val X_testPath = "D:\\repo\\AI4kt\\data\\classification\\MNIST\\t10k-images.idx3-ubyte"
     val y_testPath = "D:\\repo\\AI4kt\\data\\classification\\MNIST\\t10k-labels.idx1-ubyte"
-    var X_train = mk.ndarray(readIDX3Images(X_trainPath))
+    val X_train = mk.ndarray(readIDX3Images(X_trainPath))
     val y_train = mk.ndarray(readIDX1Labels(y_trainPath))
-    var X_test = mk.ndarray(readIDX3Images(X_testPath))
+    val X_test = mk.ndarray(readIDX3Images(X_testPath))
     val y_test = mk.ndarray(readIDX1Labels(y_testPath))
 
-    X_train = X_train.map { it / 255.0 }
-    X_test = X_test.map { it / 255.0 }
+    var X_train4D = X_train.reshape(X_train.shape[0], 28, 28, 1)
+    var X_test4D = X_test.reshape(X_test.shape[0], 28, 28, 1)
+
+    X_train4D = X_train4D.map { it / 255.0 }
+    X_test4D = X_test4D.map { it / 255.0 }
 
     val model = Sequential(
         batchSize = 32,
         random = random
     )
-        .addInput(28, 28)
+        .addInput(28, 28, 1)
         .add(
             Conv2D(
-                inputShape = intArrayOf(28, 28, 1), // Input shape: 28x28 images with 1 channel (grayscale)
-                filters = 32, // Number of filters
-                kernelSize = Pair(3, 3), // Kernel size: 3x3
-                strides = intArrayOf(1, 1), // Strides: 1x1
-                padding = "same", // Padding: "same" to preserve spatial dimensions
+                inputShape = intArrayOf(28, 28, 1),
+                filters = 32,
+                kernelSize = Pair(3, 3),
+                strides = intArrayOf(1, 1),
+                padding = "same",
                 random = random,
                 activation = ReLU()
             )
-        ) // Hidden layer with 128 neurons
-        .addDense(64, ReLU())  // Another hidden layer with 64 neurons
-        .addDense(10, Softmax()) // Output layer with 10 classes (digits 0-9)
-        .setOptimizer(AdamOptimizer(0.001)) // Adam optimizer
-        .setLossFunction(LossCategoricalCrossentropy()) // Loss function for multiclass classification
+        )
+        .addFlatten()
+        .addDense(64, ReLU())
+        .addDense(10, Softmax())
+        .setOptimizer(AdamOptimizer(0.001))
+        .setLossFunction(LossCategoricalCrossentropy())
         .build()
     val oneHot = OneHotEncoding()
     model.fit(
-        X_train,
+        X_train4D,
         oneHot.transform(y_train),
         epochs = 10
     )
 
-    val y_pred = model.predict(X_test) as D2Array<Double>
+    val y_pred = model.predict(X_test4D) as D2Array<Double>
     val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
 
     val accuracy = accuracy_score(y_test, y_pred_class)

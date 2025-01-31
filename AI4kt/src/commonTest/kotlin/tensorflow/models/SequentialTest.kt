@@ -14,12 +14,10 @@ class SequentialTest {
 
     private val random = Random(42)
 
-    private val mk = Multik
-
     @Test
     fun testForwardPass() {
         // Create a model
-        val model = Sequential(random)
+        val model = Sequential(batchSize = 2, random)
             .addInput(3) // Input layer with 3 features
             .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation
@@ -45,7 +43,7 @@ class SequentialTest {
     @Test
     fun testBackwardPass() {
         // Create a model
-        val model = Sequential(random)
+        val model = Sequential(batchSize = 2, random)
             .addInput(3) // Input layer with 3 features
             .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation
@@ -84,7 +82,7 @@ class SequentialTest {
     @Test
     fun testTrainStep() {
         // Create a model
-        val model = Sequential(random)
+        val model = Sequential(batchSize = 2, random)
             .addInput(3) // Input layer with 3 features
             .addDense(5, ReLU()) // Hidden layer with 5 neurons and ReLU activation
             .addDense(2, Softmax()) // Output layer with 2 neurons and Softmax activation

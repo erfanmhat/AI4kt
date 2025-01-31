@@ -1,6 +1,7 @@
 1. get better regression result
-2. implement CNN
-3. implement RNN
-4. implement LSTM
-5. check loss
-6. throw Exception when model fit & predict with NaN
+2. implement Conv1D
+3. fix Conv2D
+4. implement RNN
+5. implement LSTM
+6. check loss
+7. throw Exception when model fit & predict with NaN

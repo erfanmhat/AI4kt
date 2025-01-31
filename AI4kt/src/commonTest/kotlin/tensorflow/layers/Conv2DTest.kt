@@ -4,6 +4,7 @@ import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
 import tensorflow.activations.ReLU
+import kotlin.math.ceil
 import kotlin.math.sqrt
 import kotlin.test.*
 import kotlin.random.Random
@@ -14,7 +15,6 @@ class Conv2DTest {
     private val random = Random(42)
 
     private fun createRandomInput(shape: IntArray): NDArray<Double, *> {
-        // Create a zero array and fill it with random values
         return when (shape.size) {
             1 -> mk.zeros<Double>(shape[0]).map { random.nextDouble(-1.0, 1.0) }
             2 -> mk.zeros<Double>(shape[0], shape[1]).map { random.nextDouble(-1.0, 1.0) }
@@ -41,7 +41,7 @@ class Conv2DTest {
 
     @Test
     fun testWeightInitializationWithDifferentInputShape() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
@@ -58,7 +58,7 @@ class Conv2DTest {
     fun testWeightInitializationWithDifferentKernelSize() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(5, 5) // New kernel size
+        val kernelSize = Pair(5, 5)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
 
         val scale = sqrt(2.0 / (inputShape[2] * kernelSize.first * kernelSize.second))
@@ -72,7 +72,7 @@ class Conv2DTest {
     @Test
     fun testWeightInitializationWithDifferentFilters() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
 
@@ -89,7 +89,7 @@ class Conv2DTest {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
         val kernelSize = Pair(3, 3)
-        val strides = intArrayOf(2, 2) // Different strides
+        val strides = intArrayOf(2, 2)
         conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
 
         val scale = sqrt(2.0 / (inputShape[2] * kernelSize.first * kernelSize.second))
@@ -113,7 +113,7 @@ class Conv2DTest {
 
     @Test
     fun testBiasInitializationWithDifferentInputShape() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
@@ -126,7 +126,7 @@ class Conv2DTest {
     fun testBiasInitializationWithDifferentKernelSize() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(5, 5) // New kernel size
+        val kernelSize = Pair(5, 5)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
 
         assertEquals(filters, conv2D.biases.size)
@@ -136,7 +136,7 @@ class Conv2DTest {
     @Test
     fun testBiasInitializationWithDifferentFilters() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
 
@@ -149,7 +149,7 @@ class Conv2DTest {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
         val kernelSize = Pair(3, 3)
-        val random = Random(42) // Different random seed
+        val random = Random(42)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
 
         assertEquals(filters, conv2D.biases.size)
@@ -174,7 +174,7 @@ class Conv2DTest {
 
     @Test
     fun testForwardPassWithValidPaddingAndDifferentInputShape() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "valid", random = random)
@@ -191,7 +191,7 @@ class Conv2DTest {
     fun testForwardPassWithValidPaddingAndDifferentKernelSize() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(5, 5) // New kernel size
+        val kernelSize = Pair(5, 5)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "valid", random = random)
 
         val input = createRandomInput(inputShape)
@@ -205,7 +205,7 @@ class Conv2DTest {
     @Test
     fun testForwardPassWithValidPaddingAndDifferentFilters() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "valid", random = random)
 
@@ -222,7 +222,7 @@ class Conv2DTest {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
         val kernelSize = Pair(3, 3)
-        val strides = intArrayOf(2, 2) // Different strides
+        val strides = intArrayOf(2, 2)
         conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
 
         val input = createRandomInput(inputShape)
@@ -251,7 +251,7 @@ class Conv2DTest {
 
     @Test
     fun testForwardPassWithSamePaddingAndDifferentInputShape() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "same", random = random)
@@ -268,7 +268,7 @@ class Conv2DTest {
     fun testForwardPassWithSamePaddingAndDifferentKernelSize() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(5, 5) // New kernel size
+        val kernelSize = Pair(5, 5)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "same", random = random)
 
         val input = createRandomInput(inputShape)
@@ -282,7 +282,7 @@ class Conv2DTest {
     @Test
     fun testForwardPassWithSamePaddingAndDifferentFilters() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(3, 3)
         conv2D = Conv2D(inputShape, filters, kernelSize, padding = "same", random = random)
 
@@ -296,23 +296,47 @@ class Conv2DTest {
 
     @Test
     fun testForwardPassWithSamePaddingAndDifferentStrides() {
-        val inputShape = intArrayOf(1, 5, 5, 3)
+        val inputShape = intArrayOf(1, 5, 5, 3) // Batch size, height, width, channels
         val filters = 2
         val kernelSize = Pair(3, 3)
-        val strides = intArrayOf(2, 2) // Different strides
+        val strides = intArrayOf(2, 2)
         conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "same", random = random)
 
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        val expectedHeight = inputShape[1] / strides[0]
-        val expectedWidth = inputShape[2] / strides[1]
-        assertEquals(intArrayOf(1, expectedHeight, expectedWidth, filters).toList(), output.shape.toList())
+        // Calculate expected output shape for "same" padding
+        val expectedHeight = ceil(inputShape[1] / strides[0].toDouble()).toInt()
+        val expectedWidth = ceil(inputShape[2] / strides[1].toDouble()).toInt()
+        val expectedShape = intArrayOf(1, expectedHeight, expectedWidth, filters).toList()
+
+        // Assert that the output shape matches the expected shape
+        assertEquals(expectedShape, output.shape.toList())
+    }
+
+    @Test
+    fun testForwardPassWithSamePaddingAndDifferentStridesEdgeCase() {
+        val inputShape = intArrayOf(1, 6, 6, 3) // Batch size, height, width, channels
+        val filters = 2
+        val kernelSize = Pair(3, 3)
+        val strides = intArrayOf(2, 2)
+        conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "same", random = random)
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        // Calculate expected output shape for "same" padding
+        val expectedHeight = ceil(inputShape[1] / strides[0].toDouble()).toInt()
+        val expectedWidth = ceil(inputShape[2] / strides[1].toDouble()).toInt()
+        val expectedShape = intArrayOf(1, expectedHeight, expectedWidth, filters).toList()
+
+        // Assert that the output shape matches the expected shape
+        assertEquals(expectedShape, output.shape.toList())
     }
 
     @Test
     fun testForwardPassWithDifferentStrides() {
-        val inputShape = intArrayOf(1, 5, 5, 3) // Input with 3 channels
+        val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
         val kernelSize = Pair(2, 2)
         val strides = intArrayOf(2, 2)
@@ -328,7 +352,7 @@ class Conv2DTest {
 
     @Test
     fun testForwardPassWithDifferentInputShapeAndStrides() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         val strides = intArrayOf(2, 2)
@@ -346,7 +370,7 @@ class Conv2DTest {
     fun testForwardPassWithDifferentKernelSizeAndStrides() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(3, 3) // New kernel size
+        val kernelSize = Pair(3, 3)
         val strides = intArrayOf(2, 2)
         conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
 
@@ -361,7 +385,7 @@ class Conv2DTest {
     @Test
     fun testForwardPassWithDifferentFiltersAndStrides() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(2, 2)
         val strides = intArrayOf(2, 2)
         conv2D = Conv2D(inputShape, filters, kernelSize, strides = strides, padding = "valid", random = random)
@@ -387,7 +411,7 @@ class Conv2DTest {
             strides = strides,
             padding = "same",
             random = random
-        ) // Different padding
+        )
 
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
@@ -409,13 +433,13 @@ class Conv2DTest {
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList()) // Assuming valid padding
-        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList())
+        assertTrue(output.all { it >= 0 })
     }
 
     @Test
     fun testForwardPassWithDifferentInputShape() {
-        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
+        val inputShape = intArrayOf(1, 7, 7, 4)
         val filters = 3
         val kernelSize = Pair(3, 3)
         val activation = ReLU()
@@ -424,29 +448,29 @@ class Conv2DTest {
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList()) // Assuming valid padding
-        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList())
+        assertTrue(output.all { it >= 0 })
     }
 
     @Test
     fun testForwardPassWithDifferentKernelSize() {
         val inputShape = intArrayOf(1, 5, 5, 3)
         val filters = 2
-        val kernelSize = Pair(5, 5) // New kernel size
+        val kernelSize = Pair(5, 5)
         val activation = ReLU()
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random, activation = activation)
 
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        assertEquals(intArrayOf(1, 1, 1, filters).toList(), output.shape.toList()) // Assuming valid padding
-        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+        assertEquals(intArrayOf(1, 1, 1, filters).toList(), output.shape.toList())
+        assertTrue(output.all { it >= 0 })
     }
 
     @Test
     fun testForwardPassWithDifferentFilters() {
         val inputShape = intArrayOf(1, 5, 5, 3)
-        val filters = 4 // New number of filters
+        val filters = 4
         val kernelSize = Pair(3, 3)
         val activation = ReLU()
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random, activation = activation)
@@ -454,8 +478,8 @@ class Conv2DTest {
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList()) // Assuming valid padding
-        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+        assertEquals(intArrayOf(1, 3, 3, filters).toList(), output.shape.toList())
+        assertTrue(output.all { it >= 0 })
     }
 
     @Test
@@ -471,108 +495,108 @@ class Conv2DTest {
             random = random,
             padding = "same",
             activation = activation
-        ) // Different padding
+        )
 
         val input = createRandomInput(inputShape)
         val output = conv2D.forward(input)
 
-        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList()) // Assuming same padding
-        assertTrue(output.all { it >= 0 }) // Check if output is non-negative due to ReLU
+        assertEquals(intArrayOf(1, 5, 5, filters).toList(), output.shape.toList())
+        assertTrue(output.all { it >= 0 })
     }
 
-//    @Test
-//    fun testBackwardPass() {
-//        val inputShape = intArrayOf(1, 5, 5, 3)
-//        val filters = 2
-//        val kernelSize = intArrayOf(3, 3)
-//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
-//
-//        val input = createRandomInput(inputShape)
-//        val output = cnnLayer.forward(input)
-//
-//        val dvalues = createRandomInput(output.shape)
-//        val dinputs = cnnLayer.backward(dvalues)
-//
-//        assertEquals(inputShape.toList(), dinputs.shape.toList())
-//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
-//        assertEquals(filters, cnnLayer.dbiases.size)
-//    }
-//
-//    @Test
-//    fun testBackwardPassDifferentInputShape() {
-//        val inputShape = intArrayOf(1, 7, 7, 4) // New input shape
-//        val filters = 3
-//        val kernelSize = intArrayOf(3, 3)
-//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
-//
-//        val input = createRandomInput(inputShape)
-//        val output = cnnLayer.forward(input)
-//
-//        val dvalues = createRandomInput(output.shape)
-//        val dinputs = cnnLayer.backward(dvalues)
-//
-//        assertEquals(inputShape.toList(), dinputs.shape.toList())
-//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
-//        assertEquals(filters, cnnLayer.dbiases.size)
-//    }
-//
-//    @Test
-//    fun testBackwardPassDifferentKernelSize() {
-//        val inputShape = intArrayOf(1, 5, 5, 3)
-//        val filters = 2
-//        val kernelSize = intArrayOf(5, 5) // New kernel size
-//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
-//
-//        val input = createRandomInput(inputShape)
-//        val output = cnnLayer.forward(input)
-//
-//        val dvalues = createRandomInput(output.shape)
-//        val dinputs = cnnLayer.backward(dvalues)
-//
-//        assertEquals(inputShape.toList(), dinputs.shape.toList())
-//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
-//        assertEquals(filters, cnnLayer.dbiases.size)
-//    }
-//
-//    @Test
-//    fun testBackwardPassDifferentFilters() {
-//        val inputShape = intArrayOf(1, 5, 5, 3)
-//        val filters = 4 // New number of filters
-//        val kernelSize = intArrayOf(3, 3)
-//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "valid")
-//
-//        val input = createRandomInput(inputShape)
-//        val output = cnnLayer.forward(input)
-//
-//        val dvalues = createRandomInput(output.shape)
-//        val dinputs = cnnLayer.backward(dvalues)
-//
-//        assertEquals(inputShape.toList(), dinputs.shape.toList())
-//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
-//        assertEquals(filters, cnnLayer.dbiases.size)
-//    }
-//
-//    @Test
-//    fun testBackwardPassDifferentPadding() {
-//        val inputShape = intArrayOf(1, 5, 5, 3)
-//        val filters = 2
-//        val kernelSize = intArrayOf(3, 3)
-//        cnnLayer = CNNLayer(inputShape, filters, kernelSize, random = random, padding = "same") // Different padding
-//
-//        val input = createRandomInput(inputShape)
-//        val output = cnnLayer.forward(input)
-//
-//        val dvalues = createRandomInput(output.shape)
-//        val dinputs = cnnLayer.backward(dvalues)
-//
-//        assertEquals(inputShape.toList(), dinputs.shape.toList())
-//        assertEquals(cnnLayer.weights.shape.toList(), cnnLayer.dweights.shape.toList())
-//        assertEquals(filters, cnnLayer.dbiases.size)
-//    }
+    @Test
+    fun testBackwardPass() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = Pair(3, 3)
+        conv2D = Conv2D(inputShape, filters, kernelSize, random = random, padding = "valid")
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        val dvalues = createRandomInput(output.shape)
+        val dinputs = conv2D.backward(dvalues)
+
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(conv2D.weights.shape.toList(), conv2D.dweights.shape.toList())
+        assertEquals(filters, conv2D.dbiases.size)
+    }
+
+    @Test
+    fun testBackwardPassDifferentInputShape() {
+        val inputShape = intArrayOf(1, 7, 7, 4)
+        val filters = 3
+        val kernelSize = Pair(3, 3)
+        conv2D = Conv2D(inputShape, filters, kernelSize, random = random, padding = "valid")
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        val dvalues = createRandomInput(output.shape)
+        val dinputs = conv2D.backward(dvalues)
+
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(conv2D.weights.shape.toList(), conv2D.dweights.shape.toList())
+        assertEquals(filters, conv2D.dbiases.size)
+    }
+
+    @Test
+    fun testBackwardPassDifferentKernelSize() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = Pair(5, 5)
+        conv2D = Conv2D(inputShape, filters, kernelSize, random = random, padding = "valid")
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        val dvalues = createRandomInput(output.shape)
+        val dinputs = conv2D.backward(dvalues)
+
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(conv2D.weights.shape.toList(), conv2D.dweights.shape.toList())
+        assertEquals(filters, conv2D.dbiases.size)
+    }
+
+    @Test
+    fun testBackwardPassDifferentFilters() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 4
+        val kernelSize = Pair(3, 3)
+        conv2D = Conv2D(inputShape, filters, kernelSize, random = random, padding = "valid")
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        val dvalues = createRandomInput(output.shape)
+        val dinputs = conv2D.backward(dvalues)
+
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(conv2D.weights.shape.toList(), conv2D.dweights.shape.toList())
+        assertEquals(filters, conv2D.dbiases.size)
+    }
+
+    @Test
+    fun testBackwardPassDifferentPadding() {
+        val inputShape = intArrayOf(1, 5, 5, 3)
+        val filters = 2
+        val kernelSize = Pair(3, 3)
+        conv2D = Conv2D(inputShape, filters, kernelSize, random = random, padding = "same")
+
+        val input = createRandomInput(inputShape)
+        val output = conv2D.forward(input)
+
+        val dvalues = createRandomInput(output.shape)
+        val dinputs = conv2D.backward(dvalues)
+
+        assertEquals(inputShape.toList(), dinputs.shape.toList())
+        assertEquals(conv2D.weights.shape.toList(), conv2D.dweights.shape.toList())
+        assertEquals(filters, conv2D.dbiases.size)
+    }
 
     @Test
     fun testEdgeCaseWithMinimalInput() {
-        val inputShape = intArrayOf(1, 1, 1, 1) // Minimal input
+        val inputShape = intArrayOf(1, 1, 1, 1)
         val filters = 1
         val kernelSize = Pair(1, 1)
         conv2D = Conv2D(inputShape, filters, kernelSize, random = random)
@@ -582,4 +606,71 @@ class Conv2DTest {
 
         assertEquals(intArrayOf(1, 1, 1, filters).toList(), output.shape.toList())
     }
+
+//    @Test
+//    fun testConvolveBackwardInputs() {
+//        // Define input parameters
+//        val batchSize = 1
+//        val inputHeight = 4
+//        val inputWidth = 4
+//        val inputChannels = 1
+//        val filters = 1
+//        val kernelHeight = 3
+//        val kernelWidth = 3
+//        val strideHeight = 1
+//        val strideWidth = 1
+//        val padding = "valid"
+//
+//        // Create dummy inputs (batch of images)
+//        val inputs = mk.ndarray(mk[
+//            mk[mk[1.0, 2.0, 3.0, 4.0],
+//                mk[5.0, 6.0, 7.0, 8.0],
+//                mk[9.0, 10.0, 11.0, 12.0],
+//                mk[13.0, 14.0, 15.0, 16.0]]
+//        ]).reshape(batchSize, inputHeight, inputWidth, inputChannels)
+//
+//        // Create dummy weights (filters)
+//        val weights = mk.ndarray(mk[
+//            mk[mk[1.0, 0.0, 0.0], mk[0.0, 1.0, 0.0], mk[0.0, 0.0, 1.0]]
+//        ]).reshape(filters, inputChannels, kernelHeight, kernelWidth)
+//
+//        // Create dummy biases
+//        val biases = mk.zeros<Double>(filters)
+//
+//        // Create dummy strides
+//        val strides = intArrayOf(strideHeight, strideWidth)
+//
+//        // Create an instance of Conv2D
+//        val conv2D = Conv2D(
+//            inputShape = intArrayOf(inputHeight, inputWidth, inputChannels), // Input shape: [height, width, channels]
+//            filters = filters,
+//            kernelSize = Pair(kernelHeight, kernelWidth),
+//            strides = strides,
+//            padding = padding,
+//            random = Random(42)
+//        )
+//
+//        // Set weights and biases (for testing purposes)
+//        conv2D.weights = weights
+//        conv2D.biases = biases
+//
+//        // Perform the forward pass to cache the inputs
+//        val output = conv2D.forward(inputs)
+//
+//        // Create dummy dvalues (gradients of loss w.r.t. output)
+//        val dvalues = mk.ndarray(mk[
+//            mk[mk[1.0, 2.0], mk[3.0, 4.0]]
+//        ]).reshape(batchSize, 2, 2, filters)
+//
+//        // Call the function to be tested
+//        val dinputs = conv2D.convolveBackwardInputs(dvalues, weights, strides)
+//
+//        // Define the expected output
+//        val expectedDinputs = mk.ndarray(mk[
+//            mk[mk[1.0, 2.0, 0.0], mk[3.0, 4.0, 0.0], mk[0.0, 0.0, 0.0]]
+//        ]).reshape(batchSize, inputHeight, inputWidth, inputChannels)
+//
+//        // Assert that the result matches the expected output
+//        assertEquals(expectedDinputs, dinputs)
+//    }
 }
