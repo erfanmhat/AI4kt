@@ -11,6 +11,7 @@ import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
+import tensorflow.KernelSize
 import tensorflow.layers.Conv2D
 import kotlin.random.Random
 
@@ -38,9 +39,9 @@ fun main() {
         .addInput(28, 28, 1)
         .add(
             Conv2D(
-                inputShape = intArrayOf(28, 28, 1),
+                inputShape = intArrayOf(32, 28, 28, 1),
                 filters = 32,
-                kernelSize = Pair(3, 3),
+                kernelSize = KernelSize(3, 3),
                 strides = intArrayOf(1, 1),
                 padding = "same",
                 random = random,

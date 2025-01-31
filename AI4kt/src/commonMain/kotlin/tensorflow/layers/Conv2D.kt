@@ -5,6 +5,7 @@ import tensorflow.activations.Activation
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.*
+import tensorflow.KernelSize
 import kotlin.math.sqrt
 import kotlin.math.ceil
 import kotlin.random.Random
@@ -12,22 +13,22 @@ import kotlin.random.Random
 class Conv2D(
     val inputShape: IntArray, // Input shape: [height, width, channels]
     private val filters: Int, // Number of filters (output channels)
-    private val kernelSize: Pair<Int, Int>, // Kernel size: [height, width]
+    private val kernelSize: KernelSize, // Kernel size: [height, width]
     private val strides: IntArray = intArrayOf(1, 1), // Strides: [height, width]
     private val padding: String = "valid", // Padding: "valid" or "same"
-    private val dilationRate: IntArray = intArrayOf(1, 1), // Dilation rate: [height, width]
+    private val dilationRate: IntArray = intArrayOf(1, 1), // Dilation rate: [height, width]todo
     private val random: Random,
     private val activation: Activation? = null
 ) : TrainableLayer {
 
-    private val inputChannels: Int = inputShape[2] // Number of input channels
+    private val inputChannels: Int = inputShape[3] // Number of input channels
 
     // Weights and biases for the convolutional layer
-    var weights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize.first, kernelSize.second)
+    var weights: D4Array<Double> = mk.zeros<Double>(kernelSize.height, kernelSize.width, inputChannels, filters)
     var biases: D1Array<Double> = mk.zeros<Double>(filters)
 
     // Gradients for weights and biases
-    var dweights: D4Array<Double> = mk.zeros<Double>(filters, inputChannels, kernelSize.first, kernelSize.second)
+    var dweights: D4Array<Double> = mk.zeros<Double>(kernelSize.height, kernelSize.width, inputChannels, filters)
     var dbiases: D1Array<Double> = mk.zeros<Double>(filters)
 
     // Cache for inputs during forward pass (used in backward pass)
@@ -65,12 +66,12 @@ class Conv2D(
 
     init {
         // He initialization for weights
-        val scale = sqrt(2.0 / (inputChannels * kernelSize.first * kernelSize.second))
+        val scale = sqrt(2.0 / (inputChannels * kernelSize.height * kernelSize.width))
         weights = mk.ndarray(
-            List(filters) {
-                List(inputChannels) {
-                    List(kernelSize.first) {
-                        List(kernelSize.second) { random.nextDouble(-scale, scale) }
+            List(kernelSize.height) {
+                List(kernelSize.width) {
+                    List(inputChannels) {
+                        List(filters) { random.nextDouble(-scale, scale) }
                     }
                 }
             }
@@ -125,7 +126,7 @@ class Conv2D(
         return dinputs
     }
 
-    private fun padInput(input: D4Array<Double>, kernelSize: Pair<Int, Int>, strides: IntArray): D4Array<Double> {
+    private fun padInput(input: D4Array<Double>, kernelSize: KernelSize, strides: IntArray): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = input.shape
         val (strideHeight, strideWidth) = strides
         val (kernelHeight, kernelWidth) = kernelSize
@@ -178,11 +179,11 @@ class Conv2D(
 
     private fun convolve(
         inputs: D4Array<Double>, // Input tensor: [batch, height, width, channels]
-        weights: D4Array<Double>, // Filters: [filters, inputChannels, kernelHeight, kernelWidth]
-        strides: IntArray, // Strides: [strideHeight, strideWidth]
+        weights: D4Array<Double>, // Filters: [kernelHeight, kernelWidth, inputChannels, filters]
+        strides: IntArray // Strides: [strideHeight, strideWidth]
     ): D4Array<Double> {
         val (batchSize, inputHeight, inputWidth, inputChannels) = inputs.shape
-        val (filters, _, kernelHeight, kernelWidth) = weights.shape
+        val (kernelHeight, kernelWidth, _, filters) = weights.shape
         val (strideHeight, strideWidth) = strides
 
         // Calculate output dimensions (no padding logic here)
@@ -204,7 +205,8 @@ class Conv2D(
                                 val iw = ow * strideWidth + kw
                                 if (ih < inputHeight && iw < inputWidth) {
                                     for (ic in 0 until inputChannels) {
-                                        sum += inputs[b, ih, iw, ic] * weights[oc, ic, kh, kw]
+                                        // Use TensorFlow's weight shape: [kernelHeight, kernelWidth, inputChannels, filters]
+                                        sum += inputs[b, ih, iw, ic] * weights[kh, kw, ic, oc]
                                     }
                                 }
                             }
@@ -227,25 +229,21 @@ class Conv2D(
         val (_, outputHeight, outputWidth, filters) = dvalues.shape
         val (strideHeight, strideWidth) = strides
 
-        // Kernel size should be initialized or passed as a parameter
-        val kernelSize = intArrayOf(3, 3)
+        // Initialize gradients for weights with TensorFlow's shape
+        val dweights = mk.zeros<Double>(kernelSize.height, kernelSize.width, inputChannels, filters)
 
-        // Initialize gradients for weights
-        val dweights = mk.zeros<Double>(filters, inputChannels, kernelSize[0], kernelSize[1])
-
-        // Perform convolution to compute gradients for weights
-        for (b in 0 until batchSize) {
-            for (oh in 0 until outputHeight) {
-                for (ow in 0 until outputWidth) {
+        // Perform convolution (adjust loop indices to match TensorFlow's format)
+        for (kh in 0 until kernelSize.height) {
+            for (kw in 0 until kernelSize.width) {
+                for (ic in 0 until inputChannels) {
                     for (oc in 0 until filters) {
-                        for (kh in 0 until kernelSize[0]) {
-                            for (kw in 0 until kernelSize[1]) {
+                        for (oh in 0 until outputHeight) {
+                            for (ow in 0 until outputWidth) {
                                 val ih = oh * strideHeight + kh
                                 val iw = ow * strideWidth + kw
-
                                 if (ih < inputHeight && iw < inputWidth) {
-                                    for (ic in 0 until inputChannels) {
-                                        dweights[oc, ic, kh, kw] +=
+                                    for (b in 0 until batchSize) {
+                                        dweights[kh, kw, ic, oc] +=
                                             inputs[b, ih, iw, ic] * dvalues[b, oh, ow, oc]
                                     }
                                 }
@@ -259,51 +257,35 @@ class Conv2D(
         return dweights
     }
 
-
     fun convolveBackwardInputs(
         dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
-        weights: D4Array<Double>, // Filters: [filters, inputChannels, kernelHeight, kernelWidth]
+        weights: D4Array<Double>, // Filters: [kernelHeight, kernelWidth, inputChannels, filters]
         strides: IntArray // Strides: [strideHeight, strideWidth]
     ): D4Array<Double> {
         val (batchSize, outputHeight, outputWidth, _) = dvalues.shape
         val (strideHeight, strideWidth) = strides
+        val (kernelHeight, kernelWidth, inputChannels, filters) = weights.shape
 
-        // Calculate input dimensions based on padding
-        val (inputHeight, inputWidth) = when (padding.lowercase()) {
-            "valid" -> {
-                val inHeight = (outputHeight - 1) * strideHeight + kernelSize.first
-                val inWidth = (outputWidth - 1) * strideWidth + kernelSize.second
-                Pair(inHeight, inWidth)
-            }
+        // Use original input dimensions cached during forward pass
+        val inputHeight = inputs.shape[1]
+        val inputWidth = inputs.shape[2]
 
-            "same" -> {
-                val inHeight = outputHeight * strideHeight
-                val inWidth = outputWidth * strideWidth
-                Pair(inHeight, inWidth)
-            }
+        // Initialize gradients for inputs with the correct channels
+        val dinputs = mk.zeros<Double>(batchSize, inputHeight, inputWidth, inputChannels)
 
-            else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
-        }
-
-        // Initialize gradients for inputs
-        val dinputs = mk.zeros<Double>(batchSize, inputHeight, inputWidth, inputs.shape[3])
-
-        for (b in 0 until batchSize) { // Iterate over batch
-            for (oh in 0 until outputHeight) { // Iterate over output height
-                for (ow in 0 until outputWidth) { // Iterate over output width
-                    for (oc in 0 until filters) { // Iterate over output channels (filters)
-                        // Iterate over kernel height and width
-                        for (kh in 0 until kernelSize.first) {
-                            for (kw in 0 until kernelSize.second) {
-                                // Calculate input indices
+        // Perform gradient accumulation
+        for (b in 0 until batchSize) {
+            for (oh in 0 until outputHeight) {
+                for (ow in 0 until outputWidth) {
+                    for (oc in 0 until filters) {
+                        for (kh in 0 until kernelHeight) {
+                            for (kw in 0 until kernelWidth) {
                                 val ih = oh * strideHeight + kh
                                 val iw = ow * strideWidth + kw
-
-                                // Ensure that the indices are within the bounds of the input size
                                 if (ih < inputHeight && iw < inputWidth) {
-                                    for (ic in 0 until inputs.shape[3]) { // Iterate over input channels
-                                        // Correctly accumulate gradients for inputs
-                                        dinputs[b, ih, iw, ic] += dvalues[b, oh, ow, oc] * weights[oc, kh, kw, ic]
+                                    for (ic in 0 until inputChannels) {
+                                        // Use TensorFlow's weight shape: [kernelHeight, kernelWidth, inputChannels, filters]
+                                        dinputs[b, ih, iw, ic] += dvalues[b, oh, ow, oc] * weights[kh, kw, ic, oc]
                                     }
                                 }
                             }

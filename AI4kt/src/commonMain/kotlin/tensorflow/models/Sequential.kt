@@ -3,6 +3,7 @@ package tensorflow.models
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.api.ndarray
+import tensorflow.KernelSize
 import tensorflow.activations.Activation
 import tensorflow.layers.*
 import tensorflow.loss.Loss
@@ -36,12 +37,16 @@ class Sequential(
     }
 
     fun addFlatten(): Sequential {
-        val flattenInputShape = when (val lastLayer = layers.lastOrNull()) {
+        val inputShape = when (val lastLayer = layers.lastOrNull()) {
             is Input -> lastLayer.inputShape
-            is Conv2D -> lastLayer.outputShape
+            is Conv2D -> lastLayer.outputShape.also {
+                println("YYY ${lastLayer.outputShape.contentToString()}")
+            }
+
             else -> throw IllegalArgumentException("Invalid layer type")
         }
-        layers.add(Flatten(batchSize, flattenInputShape))
+        layers.add(Flatten(inputShape))
+        println("XXX ${(layers.last() as Flatten).outputShape.contentToString()}")
         return this
     }
 
@@ -59,7 +64,7 @@ class Sequential(
     // Add a Convolutional Layer
     fun addConv2D(
         filters: Int,
-        kernelSize: Pair<Int, Int>,
+        kernelSize: KernelSize,
         padding: String = "valid",
         activation: Activation? = ReLU()
     ): Sequential {
@@ -121,8 +126,11 @@ class Sequential(
     // Forward pass
     fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         var output = inputs
+        println(output.shape.contentToString())
         for (layer in layers) {
             output = layer.forward(output)
+            println(layer::class.simpleName)
+            println(output.shape.contentToString())
         }
         return output as D2Array<Double>
     }
@@ -144,7 +152,7 @@ class Sequential(
         outputShape = yTrue.shape
         // Forward pass
         val output = forward(inputs)
-
+        println(output.shape.contentToString())
         // Compute loss
         val trainStepLoss = mk.math.sum(loss.forward(output, yTrue))
         epochLosses.add(trainStepLoss)
