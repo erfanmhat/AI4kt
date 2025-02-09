@@ -6,7 +6,7 @@ import org.jetbrains.kotlinx.multik.ndarray.operations.times
 import tensorflow.layers.Conv2D
 
 class GradientDescentOptimizer(val learningRate: Double) : Optimizer {
-    override fun updateDNN(layer: Dense) {
+    override fun updateDence(layer: Dense) {
         // Update weights
         layer.weights -= layer.dweights * learningRate
 
@@ -14,7 +14,7 @@ class GradientDescentOptimizer(val learningRate: Double) : Optimizer {
         layer.biases -= layer.dbiases * learningRate
     }
 
-    override fun updateCNN(layer: Conv2D) {
+    override fun updateConv2D(layer: Conv2D) {
         TODO()
     }
 

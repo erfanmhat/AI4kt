@@ -30,11 +30,11 @@ class Flatten(
     override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         // Reshape the gradients back to the original input shape
         return when (inputShape.size) {
-            1 -> dvalues.reshape(dvalues.shape[0], inputShape[0])
-            2 -> dvalues.reshape(dvalues.shape[0], inputShape[0], inputShape[1])
-            3 -> dvalues.reshape(dvalues.shape[0], inputShape[0], inputShape[1], inputShape[2])
-            4 -> dvalues.reshape(dvalues.shape[0], inputShape[0], inputShape[1], inputShape[2], inputShape[3])
-            else -> dvalues.reshape(dvalues.shape[0], inputShape[0])
+            1 -> dvalues.reshape(inputShape[0])
+            2 -> dvalues.reshape(inputShape[0], inputShape[1])
+            3 -> dvalues.reshape(inputShape[0], inputShape[1], inputShape[2])
+            4 -> dvalues.reshape(inputShape[0], inputShape[1], inputShape[2], inputShape[3])
+            else -> dvalues.reshape(inputShape[0])
         }
     }
 }

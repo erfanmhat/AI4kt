@@ -39,14 +39,10 @@ class Sequential(
     fun addFlatten(): Sequential {
         val inputShape = when (val lastLayer = layers.lastOrNull()) {
             is Input -> lastLayer.inputShape
-            is Conv2D -> lastLayer.outputShape.also {
-                println("YYY ${lastLayer.outputShape.contentToString()}")
-            }
-
+            is Conv2D -> lastLayer.outputShape
             else -> throw IllegalArgumentException("Invalid layer type")
         }
-        layers.add(Flatten(inputShape))
-        println("XXX ${(layers.last() as Flatten).outputShape.contentToString()}")
+        layers.add(Flatten(intArrayOf(batchSize, 6272)))
         return this
     }
 
@@ -92,12 +88,15 @@ class Sequential(
         strides: Pair<Int, Int> = Pair(2, 2),
         padding: String = "valid"
     ): Sequential {
-        val inputShape = when (val lastLayer = layers.lastOrNull()) {
-            is Input -> lastLayer.inputShape
-            is Conv2D -> lastLayer.outputShape
-            else -> throw IllegalArgumentException("Invalid layer type")
-        }
-        layers.add(MaxPooling2D(poolSize, strides, padding, inputShape))
+        val inputShape = mutableListOf(batchSize)
+        inputShape.addAll(
+            when (val lastLayer = layers.lastOrNull()) {
+                is Input -> lastLayer.inputShape
+                is Conv2D -> lastLayer.outputShape
+                else -> throw IllegalArgumentException("Invalid layer type")
+            }.toTypedArray()
+        )
+        layers.add(MaxPooling2D(poolSize, strides, padding))
         return this
     }
 
@@ -126,11 +125,8 @@ class Sequential(
     // Forward pass
     fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         var output = inputs
-        println(output.shape.contentToString())
         for (layer in layers) {
             output = layer.forward(output)
-            println(layer::class.simpleName)
-            println(output.shape.contentToString())
         }
         return output as D2Array<Double>
     }
@@ -152,7 +148,6 @@ class Sequential(
         outputShape = yTrue.shape
         // Forward pass
         val output = forward(inputs)
-        println(output.shape.contentToString())
         // Compute loss
         val trainStepLoss = mk.math.sum(loss.forward(output, yTrue))
         epochLosses.add(trainStepLoss)

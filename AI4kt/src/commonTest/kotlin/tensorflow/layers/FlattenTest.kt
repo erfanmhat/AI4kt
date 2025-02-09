@@ -22,7 +22,7 @@ class FlattenTest {
             ]
         )
         val flatten =
-            Flatten(batchSize = 2, inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
+            Flatten(inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
 
         // Expected output shape after flattening
         val expectedOutputShape = intArrayOf(2, 12)
@@ -50,8 +50,7 @@ class FlattenTest {
                 ]
             ]
         )
-        val flatten =
-            Flatten(batchSize = 2, inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
+        val flatten = Flatten(inputShape = input.shape.toList().subList(1, input.shape.size).toIntArray())
 
         // Perform the forward pass to set the input shape
         flatten.forward(input)

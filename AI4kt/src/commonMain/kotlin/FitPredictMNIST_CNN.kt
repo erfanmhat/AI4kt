@@ -13,6 +13,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import tensorflow.KernelSize
 import tensorflow.layers.Conv2D
+import tensorflow.layers.MaxPooling2D
 import kotlin.random.Random
 
 fun main() {
@@ -32,15 +33,16 @@ fun main() {
     X_train4D = X_train4D.map { it / 255.0 }
     X_test4D = X_test4D.map { it / 255.0 }
 
+    val batchSize = 32
     val model = Sequential(
-        batchSize = 32,
+        batchSize = batchSize,
         random = random
     )
         .addInput(28, 28, 1)
         .add(
             Conv2D(
-                inputShape = intArrayOf(32, 28, 28, 1),
-                filters = 32,
+                inputShape = intArrayOf(batchSize, 28, 28, 1),
+                filters = 32,  // Increased number of filters
                 kernelSize = KernelSize(3, 3),
                 strides = intArrayOf(1, 1),
                 padding = "same",
@@ -48,17 +50,53 @@ fun main() {
                 activation = ReLU()
             )
         )
+        .addMaxPooling2D(
+                poolSize = Pair(2, 2),
+                strides = Pair(2, 2),
+                padding = "valid"
+        )
+        .add(
+            Conv2D(
+                inputShape = intArrayOf(batchSize, 28, 28, 32),
+                filters = 64,  // Increased number of filters
+                kernelSize = KernelSize(3, 3),
+                strides = intArrayOf(1, 1),
+                padding = "same",
+                random = random,
+                activation = ReLU()
+            )
+        )
+        .addMaxPooling2D(
+            poolSize = Pair(2, 2),
+            strides = Pair(2, 2),
+            padding = "valid"
+        )
+        .add(
+            Conv2D(
+                filters = 128,  // Increased number of filters
+                kernelSize = KernelSize(3, 3),
+                strides = intArrayOf(1, 1),
+                padding = "same",
+                random = random,
+                activation = ReLU(),
+                inputShape = intArrayOf(batchSize, 28, 28, 64)
+            )
+        )
         .addFlatten()
-        .addDense(64, ReLU())
+        .addDense(256, ReLU())  // Increased number of units
+//        .addDropout(0.5)  // Added dropout layer
+        .addDense(128, ReLU())  // Added another dense layer
+//        .addDropout(0.5)  // Added dropout layer
         .addDense(10, Softmax())
         .setOptimizer(AdamOptimizer(0.001))
         .setLossFunction(LossCategoricalCrossentropy())
         .build()
+
     val oneHot = OneHotEncoding()
     model.fit(
         X_train4D,
         oneHot.transform(y_train),
-        epochs = 10
+        epochs = 20  // Increased number of epochs
     )
 
     val y_pred = model.predict(X_test4D) as D2Array<Double>
