@@ -18,7 +18,7 @@ class Flatten(
         this.outputShape = intArrayOf(inputShape[0], flattenedSize)
     }
 
-    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         inputShape = inputs.shape
         var flattenedSize = 1
         for (i in 1..<inputs.shape.size) {
@@ -27,7 +27,7 @@ class Flatten(
         return inputs.reshape(inputs.shape[0], flattenedSize)
     }
 
-    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         // Reshape the gradients back to the original input shape
         return when (inputShape.size) {
             1 -> dvalues.reshape(inputShape[0])

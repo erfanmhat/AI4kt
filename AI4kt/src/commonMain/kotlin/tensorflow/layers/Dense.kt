@@ -1,5 +1,6 @@
 package tensorflow.layers
 
+import kotlinx.coroutines.runBlocking
 import tensorflow.activations.Activation
 import tensorflow.D2PlusD1Array
 import org.jetbrains.kotlinx.multik.api.*
@@ -34,7 +35,7 @@ class Dense(
         biases = mk.zeros<Double>(n_neurons).map { 0.01 }
     }
 
-    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         require(inputs.shape.size == 2) { "inputs shape must be [M,N] but passed ${inputs.shape.contentToString()}" }
         // Cache the inputs for use in the backward pass
         this.inputs = inputs
@@ -48,7 +49,7 @@ class Dense(
         return activation?.forward(output) ?: output
     }
 
-    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         require(dvalues.shape.size == 2) { "dvalues shape must be [M,N] but passed ${dvalues.shape.contentToString()}" }
         // Gradients for activation function (if any)
         val dactivation = if (activation != null) {
@@ -83,8 +84,8 @@ fun main() {
     val random = Random(42)
     val l1 = Dense(4, 5, random)
     val l2 = Dense(5, 2, random)
-    val l1_out = l1.forward(X)
-    val l2_out = l2.forward(l1_out)
+    val l1_out = runBlocking { l1.forward(X) }
+    val l2_out = runBlocking { l2.forward(l1_out) }
     println(l1_out)
     println()
     println(l2_out)

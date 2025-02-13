@@ -1,5 +1,9 @@
 package tensorflow.layers
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import tensorflow.D4PlusD1Array
 import tensorflow.activations.Activation
 import org.jetbrains.kotlinx.multik.api.*
@@ -81,7 +85,7 @@ class Conv2D(
         biases = mk.zeros<Double>(filters).map { 0.01 }
     }
 
-    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         require(inputs.shape.size == 4) { "inputs shape must be [batch, height, width, channels] but passed ${inputs.shape.contentToString()}" }
         // Cache the inputs for use in the backward pass
         this.inputs = inputs
@@ -97,7 +101,7 @@ class Conv2D(
         return activation?.forward(convOutput) ?: convOutput
     }
 
-    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         require(dvalues.shape.size == 4) { "dvalues shape must be [batch, height, width, channels] but passed ${dvalues.shape.contentToString()}" }
 
         // Gradients for activation function (if any)
@@ -177,115 +181,126 @@ class Conv2D(
         return paddedInput
     }
 
-    private fun convolve(
-        inputs: D4Array<Double>, // Input tensor: [batch, height, width, channels]
-        weights: D4Array<Double>, // Filters: [kernelHeight, kernelWidth, inputChannels, filters]
-        strides: IntArray // Strides: [strideHeight, strideWidth]
-    ): D4Array<Double> {
+    private suspend fun convolve(
+        inputs: D4Array<Double>,
+        weights: D4Array<Double>,
+        strides: IntArray
+    ): D4Array<Double> = coroutineScope {
         val (batchSize, inputHeight, inputWidth, inputChannels) = inputs.shape
         val (kernelHeight, kernelWidth, _, filters) = weights.shape
         val (strideHeight, strideWidth) = strides
 
-        // Calculate output dimensions (no padding logic here)
         val outputHeight = (inputHeight - kernelHeight) / strideHeight + 1
         val outputWidth = (inputWidth - kernelWidth) / strideWidth + 1
-
-        // Initialize output tensor
         val output = mk.zeros<Double>(batchSize, outputHeight, outputWidth, filters)
 
-        // Perform convolution
+        // Parallelize the outermost batch loop
+        val jobs = mutableListOf<Job>()
+
         for (b in 0 until batchSize) {
-            for (oh in 0 until outputHeight) {
-                for (ow in 0 until outputWidth) {
-                    for (oc in 0 until filters) {
-                        var sum = 0.0
-                        for (kh in 0 until kernelHeight) {
-                            for (kw in 0 until kernelWidth) {
-                                val ih = oh * strideHeight + kh
-                                val iw = ow * strideWidth + kw
-                                if (ih < inputHeight && iw < inputWidth) {
-                                    for (ic in 0 until inputChannels) {
-                                        // Use TensorFlow's weight shape: [kernelHeight, kernelWidth, inputChannels, filters]
-                                        sum += inputs[b, ih, iw, ic] * weights[kh, kw, ic, oc]
+            jobs += launch(Dispatchers.Default) {
+                for (oh in 0 until outputHeight) {
+                    for (ow in 0 until outputWidth) {
+                        for (oc in 0 until filters) {
+                            var sum = 0.0
+                            for (kh in 0 until kernelHeight) {
+                                for (kw in 0 until kernelWidth) {
+                                    val ih = oh * strideHeight + kh
+                                    val iw = ow * strideWidth + kw
+                                    if (ih < inputHeight && iw < inputWidth) {
+                                        for (ic in 0 until inputChannels) {
+                                            sum += inputs[b, ih, iw, ic] * weights[kh, kw, ic, oc]
+                                        }
                                     }
                                 }
                             }
+                            output[b, oh, ow, oc] = sum
                         }
-                        output[b, oh, ow, oc] = sum
                     }
                 }
             }
         }
 
-        return output
+        jobs.forEach { it.join() } // Wait for all coroutines to complete
+        return@coroutineScope output
     }
 
-    private fun convolveBackwardWeights(
+    private suspend fun convolveBackwardWeights(
         inputs: D4Array<Double>,
         dvalues: D4Array<Double>,
         strides: IntArray
-    ): D4Array<Double> {
+    ): D4Array<Double> = coroutineScope {
         val (batchSize, inputHeight, inputWidth, inputChannels) = inputs.shape
         val (_, outputHeight, outputWidth, filters) = dvalues.shape
         val (strideHeight, strideWidth) = strides
+        val (kernelHeight, kernelWidth) = kernelSize
 
-        // Initialize gradients for weights with TensorFlow's shape
-        val dweights = mk.zeros<Double>(kernelSize.height, kernelSize.width, inputChannels, filters)
+        // Initialize gradients for weights
+        val dweights = mk.zeros<Double>(kernelHeight, kernelWidth, inputChannels, filters)
 
-        // Perform convolution (adjust loop indices to match TensorFlow's format)
-        for (kh in 0 until kernelSize.height) {
-            for (kw in 0 until kernelSize.width) {
-                for (ic in 0 until inputChannels) {
-                    for (oc in 0 until filters) {
-                        for (oh in 0 until outputHeight) {
-                            for (ow in 0 until outputWidth) {
-                                val ih = oh * strideHeight + kh
-                                val iw = ow * strideWidth + kw
-                                if (ih < inputHeight && iw < inputWidth) {
-                                    for (b in 0 until batchSize) {
-                                        dweights[kh, kw, ic, oc] +=
-                                            inputs[b, ih, iw, ic] * dvalues[b, oh, ow, oc]
+        // List to store jobs
+        val jobs = mutableListOf<Job>()
+
+        // Parallelize outermost loops
+        for (kh in 0 until kernelHeight) {
+            for (kw in 0 until kernelWidth) {
+                jobs += launch(Dispatchers.Default) {
+                    for (ic in 0 until inputChannels) {
+                        for (oc in 0 until filters) {
+                            var sum = 0.0
+                            for (oh in 0 until outputHeight) {
+                                for (ow in 0 until outputWidth) {
+                                    val ih = oh * strideHeight + kh
+                                    val iw = ow * strideWidth + kw
+                                    if (ih < inputHeight && iw < inputWidth) {
+                                        for (b in 0 until batchSize) {
+                                            sum += inputs[b, ih, iw, ic] * dvalues[b, oh, ow, oc]
+                                        }
                                     }
                                 }
                             }
+                            dweights[kh, kw, ic, oc] = sum
                         }
                     }
                 }
             }
         }
 
-        return dweights
+        // Wait for all jobs to complete
+        jobs.forEach { it.join() }
+
+        return@coroutineScope dweights
     }
 
-    fun convolveBackwardInputs(
+    suspend fun convolveBackwardInputs(
         dvalues: D4Array<Double>, // Gradient of loss w.r.t. output: [batch, outputHeight, outputWidth, filters]
         weights: D4Array<Double>, // Filters: [kernelHeight, kernelWidth, inputChannels, filters]
         strides: IntArray // Strides: [strideHeight, strideWidth]
-    ): D4Array<Double> {
-        val (batchSize, outputHeight, outputWidth, _) = dvalues.shape
+    ): D4Array<Double> = coroutineScope {
+        val (batchSize, outputHeight, outputWidth, filters) = dvalues.shape
         val (strideHeight, strideWidth) = strides
-        val (kernelHeight, kernelWidth, inputChannels, filters) = weights.shape
+        val (kernelHeight, kernelWidth, inputChannels, _) = weights.shape
+        val (_, inputHeight, inputWidth, _) = inputShape
 
-        // Use original input dimensions cached during forward pass
-        val inputHeight = inputs.shape[1]
-        val inputWidth = inputs.shape[2]
-
-        // Initialize gradients for inputs with the correct channels
+        // Initialize gradients for inputs
         val dinputs = mk.zeros<Double>(batchSize, inputHeight, inputWidth, inputChannels)
 
-        // Perform gradient accumulation
+        val jobs = mutableListOf<Job>()
+
+        // Parallelize batch processing
         for (b in 0 until batchSize) {
-            for (oh in 0 until outputHeight) {
-                for (ow in 0 until outputWidth) {
-                    for (oc in 0 until filters) {
-                        for (kh in 0 until kernelHeight) {
-                            for (kw in 0 until kernelWidth) {
-                                val ih = oh * strideHeight + kh
-                                val iw = ow * strideWidth + kw
-                                if (ih < inputHeight && iw < inputWidth) {
-                                    for (ic in 0 until inputChannels) {
-                                        // Use TensorFlow's weight shape: [kernelHeight, kernelWidth, inputChannels, filters]
-                                        dinputs[b, ih, iw, ic] += dvalues[b, oh, ow, oc] * weights[kh, kw, ic, oc]
+            jobs += launch(Dispatchers.Default) {
+                for (oh in 0 until outputHeight) {
+                    for (ow in 0 until outputWidth) {
+                        for (oc in 0 until filters) {
+                            for (kh in 0 until kernelHeight) {
+                                for (kw in 0 until kernelWidth) {
+                                    val ih = oh * strideHeight + kh
+                                    val iw = ow * strideWidth + kw
+                                    if (ih < inputHeight && iw < inputWidth) {
+                                        for (ic in 0 until inputChannels) {
+                                            dinputs[b, ih, iw, ic] += dvalues[b, oh, ow, oc] * weights[kh, kw, ic, oc]
+                                        }
                                     }
                                 }
                             }
@@ -295,6 +310,8 @@ class Conv2D(
             }
         }
 
-        return dinputs
+        jobs.forEach { it.join() } // Wait for all parallel jobs to finish
+
+        return@coroutineScope dinputs
     }
 }

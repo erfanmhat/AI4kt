@@ -13,7 +13,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.operations.map
 import tensorflow.KernelSize
 import tensorflow.layers.Conv2D
-import tensorflow.layers.MaxPooling2D
 import kotlin.random.Random
 
 fun main() {
@@ -33,6 +32,7 @@ fun main() {
     X_train4D = X_train4D.map { it / 255.0 }
     X_test4D = X_test4D.map { it / 255.0 }
 
+    val m = 16
     val batchSize = 32
     val model = Sequential(
         batchSize = batchSize,
@@ -42,23 +42,7 @@ fun main() {
         .add(
             Conv2D(
                 inputShape = intArrayOf(batchSize, 28, 28, 1),
-                filters = 32,  // Increased number of filters
-                kernelSize = KernelSize(3, 3),
-                strides = intArrayOf(1, 1),
-                padding = "same",
-                random = random,
-                activation = ReLU()
-            )
-        )
-        .addMaxPooling2D(
-                poolSize = Pair(2, 2),
-                strides = Pair(2, 2),
-                padding = "valid"
-        )
-        .add(
-            Conv2D(
-                inputShape = intArrayOf(batchSize, 28, 28, 32),
-                filters = 64,  // Increased number of filters
+                filters = 2 * m,  // Increased number of filters
                 kernelSize = KernelSize(3, 3),
                 strides = intArrayOf(1, 1),
                 padding = "same",
@@ -73,19 +57,35 @@ fun main() {
         )
         .add(
             Conv2D(
-                filters = 128,  // Increased number of filters
+                inputShape = intArrayOf(batchSize, 28, 28, 2 * m),
+                filters = 4 * m,  // Increased number of filters
+                kernelSize = KernelSize(3, 3),
+                strides = intArrayOf(1, 1),
+                padding = "same",
+                random = random,
+                activation = ReLU()
+            )
+        )
+        .addMaxPooling2D(
+            poolSize = Pair(2, 2),
+            strides = Pair(2, 2),
+            padding = "valid"
+        )
+        .add(
+            Conv2D(
+                filters = 8 * m,  // Increased number of filters
                 kernelSize = KernelSize(3, 3),
                 strides = intArrayOf(1, 1),
                 padding = "same",
                 random = random,
                 activation = ReLU(),
-                inputShape = intArrayOf(batchSize, 28, 28, 64)
+                inputShape = intArrayOf(batchSize, 28, 28, 4 * m)
             )
         )
         .addFlatten()
         .addDense(256, ReLU())  // Increased number of units
 //        .addDropout(0.5)  // Added dropout layer
-        .addDense(128, ReLU())  // Added another dense layer
+        .addDense(8 * m, ReLU())  // Added another dense layer
 //        .addDropout(0.5)  // Added dropout layer
         .addDense(10, Softmax())
         .setOptimizer(AdamOptimizer(0.001))
@@ -96,12 +96,18 @@ fun main() {
     model.fit(
         X_train4D,
         oneHot.transform(y_train),
-        epochs = 20  // Increased number of epochs
+        epochs = 10  // Increased number of epochs
     )
 
-    val y_pred = model.predict(X_test4D) as D2Array<Double>
-    val y_pred_class = y_pred.argmax(axis = 1) as D1Array<Int>
+    val y_pred_train = model.predict(X_train4D) as D2Array<Double>
+    val y_pred_train_class = y_pred_train.argmax(axis = 1) as D1Array<Int>
 
-    val accuracy = accuracy_score(y_test, y_pred_class)
-    println("Accuracy: $accuracy")
+    val accuracy_train = accuracy_score(y_train, y_pred_train_class)
+    println("Accuracy train: $accuracy_train")
+
+    val y_pred_test = model.predict(X_test4D) as D2Array<Double>
+    val y_pred_test_class = y_pred_test.argmax(axis = 1) as D1Array<Int>
+
+    val accuracy_test = accuracy_score(y_test, y_pred_test_class)
+    println("Accuracy test: $accuracy_test")
 }

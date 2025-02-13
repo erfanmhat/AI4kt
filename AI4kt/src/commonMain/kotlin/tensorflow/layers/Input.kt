@@ -6,7 +6,7 @@ class Input(vararg inputShape: Int) : Layer {
     val inputShape: IntArray = inputShape
 
     // The forward pass simply returns the input as-is
-    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         require(
             inputs.shape.toList().subList(1, inputs.shape.size) ==
                     inputShape.toList()
@@ -16,7 +16,7 @@ class Input(vararg inputShape: Int) : Layer {
         return inputs
     }
 
-    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         throw Exception("backward not supported for InputLayer")
     }
 }

@@ -1,5 +1,6 @@
 package tensorflow.models
 
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.api.ndarray
@@ -42,7 +43,10 @@ class Sequential(
             is Conv2D -> lastLayer.outputShape
             else -> throw IllegalArgumentException("Invalid layer type")
         }
+        println(inputShape.contentToString())
+        1/0
         layers.add(Flatten(intArrayOf(batchSize, 6272)))
+//        layers.add(Flatten(intArrayOf(batchSize, 392)))
         return this
     }
 
@@ -126,7 +130,7 @@ class Sequential(
     fun forward(inputs: NDArray<Double, *>): D2Array<Double> {
         var output = inputs
         for (layer in layers) {
-            output = layer.forward(output)
+            output = runBlocking { layer.forward(output) }
         }
         return output as D2Array<Double>
     }
@@ -138,7 +142,7 @@ class Sequential(
         // Iterate through layers in reverse order
         for (layer in layers.reversed()) {
             if (layer !is Input) {
-                grad = layer.backward(grad)
+                grad = runBlocking { layer.backward(grad) }
             }
         }
     }

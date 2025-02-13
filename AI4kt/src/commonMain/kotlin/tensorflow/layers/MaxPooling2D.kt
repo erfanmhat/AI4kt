@@ -15,7 +15,7 @@ class MaxPooling2D(
     private var padTop: Int = 0
     private var padLeft: Int = 0
 
-    override fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun forward(inputs: NDArray<Double, *>): NDArray<Double, *> {
         inputCache = inputs.asDNArray().toD4()
 
         val batchSize = inputCache.shape[0]
@@ -103,7 +103,7 @@ class MaxPooling2D(
         return output
     }
 
-    override fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
+    override suspend fun backward(dvalues: NDArray<Double, *>): NDArray<Double, *> {
         val gradients = zeros(inputCache.shape)
         val batchSize = inputCache.shape[0]
         val inputHeight = inputCache.shape[1]
