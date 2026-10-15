@@ -20,7 +20,6 @@ class Conv2D(
     private val kernelSize: KernelSize, // Kernel size: [height, width]
     private val strides: IntArray = intArrayOf(1, 1), // Strides: [height, width]
     private val padding: String = "valid", // Padding: "valid" or "same"
-    private val dilationRate: IntArray = intArrayOf(1, 1), // Dilation rate: [height, width]todo
     private val random: Random,
     private val activation: Activation? = null
 ) : TrainableLayer {
@@ -42,30 +41,24 @@ class Conv2D(
 
     val outputShape: IntArray
         get() {
-            val (inputHeight, inputWidth, _) = inputShape
+            val (batchSize, inputHeight, inputWidth) = inputShape
             val (kernelHeight, kernelWidth) = kernelSize
             val (strideHeight, strideWidth) = strides
-            val dilationHeight = dilationRate[0]
-            val dilationWidth = dilationRate[1]
-
-            // Calculate effective kernel size considering dilation
-            val effectiveKernelHeight = kernelHeight + (kernelHeight - 1) * (dilationHeight - 1)
-            val effectiveKernelWidth = kernelWidth + (kernelWidth - 1) * (dilationWidth - 1)
 
             // Calculate output height and width based on padding
             val outputHeight = when (padding.lowercase()) {
                 "same" -> ceil(inputHeight.toDouble() / strideHeight).toInt()
-                "valid" -> ceil((inputHeight - effectiveKernelHeight + 1).toDouble() / strideHeight).toInt()
+                "valid" -> ceil((inputHeight - kernelHeight + 1).toDouble() / strideHeight).toInt()
                 else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
             }
 
             val outputWidth = when (padding.lowercase()) {
                 "same" -> ceil(inputWidth.toDouble() / strideWidth).toInt()
-                "valid" -> ceil((inputWidth - effectiveKernelWidth + 1).toDouble() / strideWidth).toInt()
+                "valid" -> ceil((inputWidth - kernelWidth + 1).toDouble() / strideWidth).toInt()
                 else -> throw IllegalArgumentException("Padding must be 'valid' or 'same'")
             }
 
-            return intArrayOf(outputHeight, outputWidth, filters)
+            return intArrayOf(batchSize, outputHeight, outputWidth, filters)
         }
 
     init {

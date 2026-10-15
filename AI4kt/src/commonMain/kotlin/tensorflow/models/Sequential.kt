@@ -38,15 +38,17 @@ class Sequential(
     }
 
     fun addFlatten(): Sequential {
-        val inputShape = when (val lastLayer = layers.lastOrNull()) {
-            is Input -> lastLayer.inputShape
+        val outputShape = when (val lastLayer = layers.lastOrNull()) {
+            is Input -> intArrayOf(batchSize, *lastLayer.inputShape)
             is Conv2D -> lastLayer.outputShape
             else -> throw IllegalArgumentException("Invalid layer type")
         }
-        println(inputShape.contentToString())
-        1/0
-        layers.add(Flatten(intArrayOf(batchSize, 6272)))
-//        layers.add(Flatten(intArrayOf(batchSize, 392)))
+        println(outputShape.contentToString())
+        var flattenSize = 1
+        for (index in 1 until outputShape.size) {
+            flattenSize *= outputShape[index]
+        }
+        layers.add(Flatten(intArrayOf(batchSize, flattenSize)))
         return this
     }
 
@@ -153,7 +155,7 @@ class Sequential(
         // Forward pass
         val output = forward(inputs)
         // Compute loss
-        val trainStepLoss = mk.math.sum(loss.forward(output, yTrue))
+        val trainStepLoss = mk.math.sum(loss.forward(output, yTrue)) / batchSize
         epochLosses.add(trainStepLoss)
 
         print("\r")

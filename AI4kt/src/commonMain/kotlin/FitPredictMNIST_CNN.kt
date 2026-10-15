@@ -32,60 +32,60 @@ fun main() {
     X_train4D = X_train4D.map { it / 255.0 }
     X_test4D = X_test4D.map { it / 255.0 }
 
-    val m = 16
+    val m = 1
     val batchSize = 32
     val model = Sequential(
         batchSize = batchSize,
         random = random
     )
         .addInput(28, 28, 1)
-        .add(
-            Conv2D(
-                inputShape = intArrayOf(batchSize, 28, 28, 1),
-                filters = 2 * m,  // Increased number of filters
-                kernelSize = KernelSize(3, 3),
-                strides = intArrayOf(1, 1),
-                padding = "same",
-                random = random,
-                activation = ReLU()
-            )
-        )
-        .addMaxPooling2D(
-            poolSize = Pair(2, 2),
-            strides = Pair(2, 2),
-            padding = "valid"
-        )
-        .add(
-            Conv2D(
-                inputShape = intArrayOf(batchSize, 28, 28, 2 * m),
-                filters = 4 * m,  // Increased number of filters
-                kernelSize = KernelSize(3, 3),
-                strides = intArrayOf(1, 1),
-                padding = "same",
-                random = random,
-                activation = ReLU()
-            )
-        )
-        .addMaxPooling2D(
-            poolSize = Pair(2, 2),
-            strides = Pair(2, 2),
-            padding = "valid"
-        )
-        .add(
-            Conv2D(
-                filters = 8 * m,  // Increased number of filters
-                kernelSize = KernelSize(3, 3),
-                strides = intArrayOf(1, 1),
-                padding = "same",
-                random = random,
-                activation = ReLU(),
-                inputShape = intArrayOf(batchSize, 28, 28, 4 * m)
-            )
-        )
+//        .add(
+//            Conv2D(
+//                inputShape = intArrayOf(batchSize, 28, 28, 1),
+//                filters = 2 * m,  // Increased number of filters
+//                kernelSize = KernelSize(3, 3),
+//                strides = intArrayOf(1, 1),
+//                padding = "same",
+//                random = random,
+//                activation = ReLU()
+//            )
+//        )
+//        .addMaxPooling2D(
+//            poolSize = Pair(2, 2),
+//            strides = Pair(2, 2),
+//            padding = "valid"
+//        )
+//        .add(
+//            Conv2D(
+//                inputShape = intArrayOf(batchSize, 14, 14, 2 * m),
+//                filters = 4 * m,  // Increased number of filters
+//                kernelSize = KernelSize(3, 3),
+//                strides = intArrayOf(1, 1),
+//                padding = "same",
+//                random = random,
+//                activation = ReLU()
+//            )
+//        )
+//        .addMaxPooling2D(
+//            poolSize = Pair(2, 2),
+//            strides = Pair(2, 2),
+//            padding = "valid"
+//        )
+//        .add(
+//            Conv2D(
+//                inputShape = intArrayOf(batchSize, 7, 7, 4 * m),
+//                filters = 8 * m,  // Increased number of filters
+//                kernelSize = KernelSize(3, 3),
+//                strides = intArrayOf(1, 1),
+//                padding = "same",
+//                random = random,
+//                activation = ReLU()
+//            )
+//        )
         .addFlatten()
         .addDense(256, ReLU())  // Increased number of units
 //        .addDropout(0.5)  // Added dropout layer
-        .addDense(8 * m, ReLU())  // Added another dense layer
+        .addDense(128, ReLU())  // Added another dense layer
 //        .addDropout(0.5)  // Added dropout layer
         .addDense(10, Softmax())
         .setOptimizer(AdamOptimizer(0.001))
